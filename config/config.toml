@@ -16,6 +16,7 @@ mise-history = { builtin = "history-watch" }
 "~/.config/starship.toml" = { mode = "track" }
 
 "~/.zshenv" = { source = "templates/zshenv.tmpl", mode = "template", permissions = "0600" }
+"~/.zshrc" = { mode = "track" }
 
 [tools]
 usage = "latest"
