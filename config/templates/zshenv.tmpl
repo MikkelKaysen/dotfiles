@@ -1,0 +1,21 @@
+# Start configuration added by Zim install {{{
+#
+# User configuration sourced by all invocations of the shell
+#
+
+# Define Zim location
+: ${ZIM_HOME=${ZDOTDIR:-${HOME}}/.zim}
+# }}} End configuration added by Zim install
+
+typeset -U path
+path+=("${HOME}/.local/bin")
+
+: ${EDITOR="nvim"}
+: ${VISUAL="nvim"}
+: ${ITM_LLM_GW_URL="https://llm-gw.itmindsinternal.dk/v1"}
+: ${ITM_LLM_GW_KEY="{{ secret(name="itm_llm_gw_key") }}"}
+
+export EDITOR
+export VISUAL
+export ITM_LLM_GW_URL
+export ITM_LLM_GW_KEY
