@@ -7,11 +7,12 @@ itm_llm_gw_key = "ITM_LLM_GW_KEY"
 mise-history = { builtin = "history-watch" }
 
 [dotfiles]
+
+"~/.config/fnox/config.toml" = { mode = "track" }
 "~/.config/mise/config.toml" = { mode = "track" }
 "~/.config/mise/settings.toml" = { mode = "track" }
 "~/.config/mise/templates/zshenv.tmpl" = { mode = "track" }
-
-"~/.config/fnox/config.toml" = { mode = "track" }
+"~/.config/starship.toml" = { mode = "track" }
 
 "~/.zshenv" = { source = "templates/zshenv.tmpl", mode = "template", permissions = "0600" }
 
