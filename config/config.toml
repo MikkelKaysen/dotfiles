@@ -3,6 +3,9 @@
 [bootstrap.secrets]
 itm_llm_gw_key = "ITM_LLM_GW_KEY"
 
+[bootstrap.services]
+mise-history = { builtin = "history-watch" }
+
 [dotfiles]
 "~/.config/mise/config.toml" = { mode = "track" }
 "~/.config/mise/settings.toml" = { mode = "track" }
