@@ -20,6 +20,12 @@
       "variants": []
     },
     {
+      "path": "home/.config/bat",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "home/.config/fnox/config.toml",
       "autosave": true,
       "encrypt": false,

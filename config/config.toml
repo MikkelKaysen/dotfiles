@@ -7,6 +7,7 @@ itm_llm_gw_key = "ITM_LLM_GW_KEY"
 mise-history = { builtin = "history-watch" }
 
 [dotfiles]
+"~/.config/bat" = { mode = "track" }
 
 "~/.config/fnox/config.toml" = { mode = "track" }
 "~/.config/mise/config.toml" = { mode = "track" }
