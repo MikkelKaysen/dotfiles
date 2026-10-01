@@ -1,0 +1,13 @@
+#:schema https://fnox.jdx.dev/schema.json
+
+[providers.bitwarden]
+type = "bitwarden"
+
+[providers.protonpass]
+type = "proton-pass"
+vault = "Personal"
+agent_reason = "fnox secret retrieval"
+
+[secrets.ITM_LLM_GW_KEY]
+provider = "protonpass"
+value = "ITMinds LLM Gateway/API key"

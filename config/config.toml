@@ -1,0 +1,26 @@
+#:schema https://mise.jdx.dev/schema/mise.json
+
+[bootstrap.secrets]
+itm_llm_gw_key = "ITM_LLM_GW_KEY"
+
+[dotfiles]
+"~/.config/mise/config.toml" = { mode = "track" }
+"~/.config/mise/settings.toml" = { mode = "track" }
+"~/.config/mise/templates/zshenv.tmpl" = { mode = "track" }
+
+"~/.config/fnox/config.toml" = { mode = "track" }
+
+"~/.zshenv" = { source = "templates/zshenv.tmpl", mode = "template", permissions = "0600" }
+
+[tools]
+usage = "latest"
+bitwarden = "latest"
+fnox = "latest"
+age = "latest"
+btop = "latest"
+opencode = "latest"
+bun = "latest"
+node = "lts-krypton"
+dotnet = "10"
+terraform = "latest"
+rust = "stable"
