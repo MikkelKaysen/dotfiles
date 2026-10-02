@@ -21,7 +21,6 @@ mise-history = { builtin = "history-watch" }
 [bootstrap.mise_shell_activate]
 zshrc = { enabled = true, mode = "activate" }
 
-
 [tools]
 usage = "latest"
 bitwarden = "latest"
