@@ -18,6 +18,9 @@ mise-history = { builtin = "history-watch" }
 "~/.zshenv" = { source = "templates/zshenv.tmpl", mode = "template", permissions = "0600" }
 "~/.zshrc" = { mode = "track" }
 
+[bootstrap.mise_shell_activate]
+zshrc = { enabled = true, mode = "activate" }
+
 [tools]
 usage = "latest"
 bitwarden = "latest"
