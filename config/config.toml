@@ -47,4 +47,4 @@ zoxide = "latest"
 "npm:codeburn" = "latest"
 
 [settings]
-trusted_config_paths = []
+trusted_config_paths = ['~/code/work/', '~/code/minds/']
