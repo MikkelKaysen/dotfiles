@@ -19,7 +19,7 @@ mise-history = { builtin = "history-watch" }
 "~/.zshrc" = { mode = "track" }
 
 [bootstrap.mise_shell_activate]
-zshrc = { enabled = true, mode = "activate" }
+zsh = true
 
 [tools]
 usage = "latest"
