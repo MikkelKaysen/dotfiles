@@ -50,6 +50,12 @@
       "variants": []
     },
     {
+      "path": "home/.config/zellij",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "home/.zshrc",
       "autosave": true,
       "encrypt": false,

@@ -16,6 +16,7 @@ mise-history = { builtin = "history-watch" }
 "~/.config/mise/templates/zshenv.tmpl" = { mode = "track" }
 "~/.config/nvim" = { mode = "track" }
 "~/.config/starship.toml" = { mode = "track" }
+"~/.config/zellij" = { mode = "track" }
 
 "~/.zshenv" = { source = "templates/zshenv.tmpl", mode = "template", permissions = "0600" }
 "~/.zshrc" = { mode = "track" }
