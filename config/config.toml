@@ -71,8 +71,7 @@ raw = false
 yes = false
 
 not_found_auto_install = true
-task_output = "prefix"
+output = "prefix"
 paranoid = false
 
-disable_default_shorthands = false
 disable_tools = []
