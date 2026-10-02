@@ -8,6 +8,7 @@ mise-history = { builtin = "history-watch" }
 
 [dotfiles]
 "~/.config/bat" = { mode = "track" }
+"~/.config/btop" = { mode = "track" }
 
 "~/.config/fnox/config.toml" = { mode = "track" }
 "~/.config/mise/config.toml" = { mode = "track" }
