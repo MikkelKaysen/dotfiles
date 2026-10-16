@@ -1,0 +1,66 @@
+#!/bin/sh
+
+# Exit if the `SKIP_LLM_GITHOOK` environment variable is set
+if [ -n "$SKIP_LLM_GITHOOK" ]; then
+  exit 0
+fi
+
+SCRIPT_DIR="$(dirname "$0")/../scripts"
+LOCALAI_SCRIPT="$SCRIPT_DIR/commit-msg-localai.sh"
+
+# ANSI color codes for styling the output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Function to display a spinning animation during the LLM processing
+spin_animation() {
+  spinner=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+  while true; do
+    for i in "${spinner[@]}"; do
+      tput civis
+      tput el1
+      printf "\\r${YELLOW}%s${NC} Generating LLM commit message..." "$i"
+      sleep 0.1
+      tput cub 32
+    done
+  done
+}
+
+# Check if LocalAI script exists and is executable
+if [ ! -x "$LOCALAI_SCRIPT" ]; then
+  echo "${RED}Error: '$LOCALAI_SCRIPT' is missing or not executable.${NC}"
+  exit 1
+fi
+
+# Start the spinning animation in the background
+spin_animation &
+spin_pid=$!
+
+# Pipe staged diff to script; script warns and returns 0 on recoverable failures.
+script_output=$(git diff --staged | "$LOCALAI_SCRIPT" "$1" "$2" 2>&1)
+
+# Stop the spinning animation
+kill "$spin_pid" >/dev/null 2>&1
+wait "$spin_pid" 2>/dev/null
+
+# Finalizing output
+tput cnorm
+echo
+
+if [ -n "$script_output" ]; then
+  printf "${YELLOW}%s${NC}\\n" "$script_output"
+fi
+
+if [ -s "$1" ]; then
+  echo "${BLUE}=== Generated Commit Message ===${NC}"
+  echo "${GREEN}$(cat "$1")${NC}"
+  echo "${BLUE}=================================${NC}"
+  echo
+else
+  printf "${YELLOW}Warning: no generated message. Please enter one manually.${NC}\\n"
+fi
+
+exit 0

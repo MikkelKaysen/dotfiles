@@ -1,0 +1,39 @@
+# -------
+# Prompt
+# -------
+
+zmodule joke/zim-starship
+
+# -------
+# Modules
+# -------
+
+# Utility
+
+zmodule environment
+zmodule input
+zmodule utility
+zmodule termtitle
+zmodule zsh-users/zsh-autosuggestions
+zmodule zdharma-continuum/fast-syntax-highlighting
+zmodule jeffreytse/zsh-vi-mode
+
+# Tools
+
+zmodule git
+zmodule fzf
+zmodule mikkelkaysen/zsh-fzf
+zmodule mikkelkaysen/zsh-eza
+zmodule antoineco/zim-zoxide
+zmodule mikkelkaysen/zsh-mise
+zmodule mikkelkaysen/zsh-opencode-profiles
+
+# -------
+# Completion
+# -------
+
+zmodule zsh-users/zsh-completions --fpath src
+zmodule mikkelkaysen/zsh-completions -n mikkelkaysen-zsh-completion
+
+# Finalize
+zmodule completion

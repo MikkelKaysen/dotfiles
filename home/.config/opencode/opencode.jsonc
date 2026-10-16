@@ -1,0 +1,38 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "quick-message",
+  "mcp": {
+    "angular-cli": {
+      "type": "local",
+      "command": ["npx", "-y", "@angular/cli", "mcp"],
+      "enabled": true,
+    },
+  },
+  "provider": {
+    "itm-gw": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "IT Minds LLM Gateway",
+      "options": {
+        "litellm": true,
+        "baseURL": "{env:ITM_LLM_GW_URL}",
+        "apiKey": "{env:ITM_LLM_GW_KEY}",
+      },
+    },
+    "localai": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LocalAI (local)",
+      "options": {
+        "baseURL": "http://localhost:8080/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+        },
+      },
+    },
+  },
+  "references": {
+    "plan": {
+      "path": "~/.opencode/plan",
+      "description": "Plan files from plan mode",
+    },
+  },
+}
