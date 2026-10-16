@@ -1,3 +1,7 @@
+"$schema" = "https://starship.rs/config-schema.json"
+
+palette = "catppuccin_mocha"
+
 [aws]
 symbol = "  "
 

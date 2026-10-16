@@ -1,0 +1,2 @@
+env = ["minds"]
+auto_env = true
