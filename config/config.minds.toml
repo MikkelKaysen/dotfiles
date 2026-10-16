@@ -1,0 +1,14 @@
+[bootstrap.secrets]
+minds_git_email = { env = "MINDS_GIT_EMAIL", description = "Git user email for ~/code/minds/ repositories" }
+
+[bootstrap.directories."~/code/minds"]
+mode = "0755"
+
+[dotfiles]
+"~/.config/git/minds/user" = { source = "templates/git/minds-user.tmpl", mode = "template", permissions = "0644", remove_empty = true }
+"~/.config/git/minds.config" = { source = "git/minds.config", mode = "copy" }
+"~/.config/opencode/profiles/minds/opencode.jsonc" = { source = "opencode/minds/opencode.jsonc", mode = "symlink" }
+
+[settings]
+trusted_config_paths = ['~/code/minds']
+

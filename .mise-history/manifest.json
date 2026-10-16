@@ -2,13 +2,67 @@
   "format": 1,
   "enrollment": [
     {
+      "path": "config/config.linux.toml",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "config/config.macos.toml",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "config/config.minds.toml",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "config/config.toml",
       "autosave": true,
       "encrypt": false,
       "variants": []
     },
     {
+      "path": "config/config.work.toml",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "config/git",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "config/miserc.toml",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "config/opencode",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "config/settings.toml",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "config/templates/git",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "config/templates/zsh/zshenv.tmpl",
       "autosave": true,
       "encrypt": false,
       "variants": []
@@ -34,11 +88,41 @@
     {
       "path": "home/.config/fnox/config.toml",
       "autosave": true,
+      "encrypt": true,
+      "variants": []
+    },
+    {
+      "path": "home/.config/git/hooks",
+      "autosave": true,
       "encrypt": false,
       "variants": []
     },
     {
       "path": "home/.config/nvim",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "home/.config/opencode/agents",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "home/.config/opencode/cli.json",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "home/.config/opencode/commands",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "home/.config/opencode/opencode.jsonc",
       "autosave": true,
       "encrypt": false,
       "variants": []
@@ -56,6 +140,12 @@
       "variants": []
     },
     {
+      "path": "home/.config/zsh",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "home/.zshrc",
       "autosave": true,
       "encrypt": false,
@@ -63,8 +153,12 @@
     }
   ],
   "exclude": [],
-  "recipients": [],
+  "recipients": [
+    "age182reh6v4aq9kjt26tl94dh69p5s6jy5pefukzsgs405tfxrz5e4s8pu25w",
+    "age1f7r4zyrd0vxctyvhvmssnyh85095zv0qcu3lg9utlwgqmfrjhy4q5nrjyz"
+  ],
   "permissions": {
-    "home/.config": 448
+    "home/.config": 448,
+    "home/.config/opencode/cli.json": 384
   }
 }

@@ -1,0 +1,14 @@
+[bootstrap.secrets]
+work_git_email = { env = "WORK_GIT_EMAIL", description = "Git user email for ~/code/work/ repositories" }
+
+[bootstrap.directories."~/code/work"]
+mode = "0755"
+
+[dotfiles]
+"~/.config/git/work/user" = { source = "templates/git/work-user.tmpl", mode = "template", permissions = "0644", remove_empty = true }
+"~/.config/git/work.config" = { source = "git/work.config", mode = "copy" }
+
+
+[settings]
+trusted_config_paths = ['~/code/work']
+
