@@ -1,19 +1,82 @@
 #:schema https://mise.jdx.dev/schema/mise.json
 
+[history.encryption]
+recipients = [
+  "age1f7r4zyrd0vxctyvhvmssnyh85095zv0qcu3lg9utlwgqmfrjhy4q5nrjyz", # machine
+  "age182reh6v4aq9kjt26tl94dh69p5s6jy5pefukzsgs405tfxrz5e4s8pu25w", # recovery
+]
+
 [bootstrap.secrets]
-itm_llm_gw_key = "ITM_LLM_GW_KEY"
+itm_llm_gw = "ITM_LLM_GW_KEY"
 
 [bootstrap.services]
 mise-history = { builtin = "history-watch" }
 
+[bootstrap.hooks.pre-dotfiles]
+run = [
+  "[[ -f ~/.config/mise/age.txt ]] || { mkdir -p ~/.config/mise; mise exec -- age-keygen -o ~/.config/mise/age.txt; chmod 600 ~/.config/mise/age.txt; }",
+  "[[ -f ~/.config/fnox/age.txt ]] || { mkdir -p ~/.config/fnox; mise exec -- age-keygen -o ~/.config/fnox/age.txt; chmod 600 ~/.config/fnox/age.txt; }",
+]
+
+# --- Always create ~/code/personal ---
+[bootstrap.directories."~/code/personal"]
+mode = "0755"
+
 [dotfiles]
+# --- mise config ---
+"~/.config/mise/miserc.toml" = { mode = "track" }
 "~/.config/mise/config.toml" = { mode = "track" }
 "~/.config/mise/settings.toml" = { mode = "track" }
-"~/.config/mise/templates/zshenv.tmpl" = { mode = "track" }
+"~/.config/mise/config.linux.toml" = { mode = "track" }
+"~/.config/mise/config.macos.toml" = { mode = "track" }
+"~/.config/mise/config.minds.toml" = { mode = "track" }
+"~/.config/mise/config.work.toml" = { mode = "track" }
 
-"~/.config/fnox/config.toml" = { mode = "track" }
+# --- Templates ---
+"~/.config/mise/templates/git" = { mode = "track" }
+"~/.config/mise/templates/zsh/zshenv.tmpl" = { mode = "track" }
 
-"~/.zshenv" = { source = "templates/zshenv.tmpl", mode = "template", permissions = "0600" }
+# --- fnox config ---
+"~/.config/fnox/config.toml" = { mode = "track", encrypt = true }
+
+# --- zsh config ---
+"~/.config/zsh" = { mode = "track" }
+"~/.zshrc" = { mode = "track" }
+"~/.zshenv" = { source = "templates/zsh/zshenv.tmpl", mode = "template", permissions = "0600" }
+
+# --- git config ---
+"~/.config/mise/git" = { mode = "track" }
+"~/.gitconfig" = { source = "templates/git/gitconfig.tmpl", mode = "template", permissions = "0644" }
+"~/.config/git/default.config" = { source = "git/default.config", mode = "copy" }
+"~/.config/git/default/core" = { source = "git/default/core", mode = "copy" }
+"~/.config/git/default/user" = { source = "git/default/user", mode = "copy", permissions = "0644" }
+"~/.config/git/hooks" = { mode = "track" }
+
+# --- starship config ---
+"~/.config/starship.toml" = { mode = "track" }
+
+# --- zellij config ---
+"~/.config/zellij" = { mode = "track" }
+
+# --- bat config ---
+"~/.config/bat" = { mode = "track" }
+
+# --- btop config ---
+"~/.config/btop" = { mode = "track" }
+
+# --- Neovim config ---
+"~/.config/nvim" = { mode = "track" }
+
+# --- opencode config ---
+"~/.config/mise/opencode" = { mode = "track" }
+"~/.config/opencode/cli.json" = { mode = "track" }
+"~/.config/opencode/agents" = { mode = "track" }
+"~/.config/opencode/commands" = { mode = "track" }
+"~/.config/opencode/opencode.jsonc" = { mode = "track" }
+"~/.config/opencode/profiles/personal/opencode.jsonc" = { source = "opencode/personal/opencode.jsonc", mode = "symlink" }
+
+[bootstrap.mise_shell_activate]
+zsh = true
 
 [tools]
 usage = "latest"
@@ -26,4 +89,29 @@ bun = "latest"
 node = "lts-krypton"
 dotnet = "10"
 terraform = "latest"
-rust = "stable"
+rust = "latest"
+starship = "latest"
+fzf = "latest"
+ripgrep = "latest"
+fd = "latest"
+bat = "latest"
+yazi = "latest"
+zellij = "latest"
+zoxide = "latest"
+"npm:@angular/cli" = "latest"
+cargo-binstall = "latest"
+"cargo:agent-top" = "latest"
+"cargo:cargo-cache" = "latest"
+eza = "latest"
+
+[settings]
+minimum_release_age = "12h"
+
+self_update.auto = true
+
+trusted_config_paths = ['~/code/personal']
+
+[settings.history]
+allow_plaintext_history = true
+
+

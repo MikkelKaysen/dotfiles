@@ -5,6 +5,7 @@
 
 # Define Zim location
 : ${ZIM_HOME=${ZDOTDIR:-${HOME}}/.zim}
+: ${ZIM_CONFIG_FILE="${HOME}/.config/zsh/zimrc"}
 # End configuration added by Zim install
 
 typeset -U path
@@ -13,7 +14,7 @@ path+=("${HOME}/.local/bin")
 : ${EDITOR="nvim"}
 : ${VISUAL="nvim"}
 : ${ITM_LLM_GW_URL="https://llm-gw.itmindsinternal.dk/v1"}
-: ${ITM_LLM_GW_KEY="{{ secret(name="itm_llm_gw_key") }}"}
+: ${ITM_LLM_GW_KEY="{{ secret(name="itm_llm_gw") }}"}
 
 export EDITOR
 export VISUAL
