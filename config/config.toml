@@ -111,4 +111,7 @@ self_update.auto = true
 
 trusted_config_paths = ['~/code/personal']
 
+[settings.history]
+allow_plaintext_history = true
+
 
