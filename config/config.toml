@@ -3,7 +3,7 @@
 [history.encryption]
 recipients = [
   "age1f7r4zyrd0vxctyvhvmssnyh85095zv0qcu3lg9utlwgqmfrjhy4q5nrjyz", # machine
-  "age182reh6v4aq9kjt26tl94dh69p5s6jy5pefukzsgs405tfxrz5e4s8pu25w", # bitwarden recovery
+  "age182reh6v4aq9kjt26tl94dh69p5s6jy5pefukzsgs405tfxrz5e4s8pu25w", # recovery
 ]
 
 [bootstrap.secrets]
