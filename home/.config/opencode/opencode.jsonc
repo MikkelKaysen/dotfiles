@@ -22,7 +22,7 @@
     },
   },
   "policies": [
-    { "action": "provider.use", "resource": "opencode-go", "effect": "deny" },
+    { "action": "provider.use", "resource": "opencode", "effect": "deny" },
     { "action": "provider.use", "resource": "ollama", "effect": "deny" },
   ],
   "references": {
