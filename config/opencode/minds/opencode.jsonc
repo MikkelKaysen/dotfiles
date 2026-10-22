@@ -1,13 +1,11 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "enabled_providers": ["itm-gw", "localai"],
   "model": "itm-gw/qwen3.8",
-  "small_model": "itm-gw/deepseek-v4.1-flash",
-  "plugin": ["opencode-plugin-litellm", "opencode-models-discovery"],
-  "provider": {
-    "localai": { "options": { "modelsDiscovery": { "enabled": false } } },
+  "plugins": ["opencode-plugin-litellm", "opencode-models-discovery"],
+  "providers": {
+    "localai": { "settings": { "modelsDiscovery": { "enabled": false } } },
   },
-  "agent": {
+  "agents": {
     "build": { "model": "itm-gw/qwen3.8" },
     "plan": { "model": "itm-gw/glm-5.3" },
     "quick-message": { "model": "itm-gw/deepseek-v4.1-flash" },
