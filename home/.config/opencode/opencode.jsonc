@@ -35,4 +35,7 @@
       "description": "Plan files from plan mode",
     },
   },
+  "experimental": {
+    "todo": true,
+  },
 }
