@@ -14,6 +14,9 @@
       },
     },
   },
+  "policies": [
+    { "action": "provider.use", "resource": "copilot", "effect": "deny" },
+  ],
   "agents": {
     "build": { "model": "itm-gw/qwen3.8" },
     "plan": { "model": "itm-gw/glm-5.3" },
