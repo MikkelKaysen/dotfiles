@@ -10,15 +10,6 @@
     },
   },
   "providers": {
-    "itm-gw": {
-      "package": "@ai-sdk/openai-compatible",
-      "name": "IT Minds LLM Gateway",
-      "settings": {
-        "litellm": true,
-        "baseURL": "{env:ITM_LLM_GW_URL}",
-        "apiKey": "{env:ITM_LLM_GW_KEY}",
-      },
-    },
     "localai": {
       "package": "@ai-sdk/openai-compatible",
       "name": "LocalAI (local)",
@@ -30,6 +21,9 @@
       },
     },
   },
+  "policies": [
+    { "action": "provider.use", "resource": "opencode-go", "effect": "deny" },
+  ],
   "references": {
     "plan": {
       "path": "~/.opencode/plan",
