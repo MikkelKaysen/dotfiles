@@ -14,7 +14,11 @@
     },
   },
   "policies": [
-    { "action": "provider.use", "resource": "copilot", "effect": "deny" },
+    {
+      "action": "provider.use",
+      "resource": "github-copilot",
+      "effect": "deny",
+    },
   ],
   "agents": {
     "build": { "model": "itm-gw/qwen3.8" },
