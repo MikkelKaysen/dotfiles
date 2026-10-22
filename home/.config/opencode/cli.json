@@ -11,7 +11,7 @@
     "sidebar": "auto",
     "scrollbar": false,
     "thinking": "hide",
-    "markdown": "rendered",
+    "markdown": "source",
     "grouping": "auto",
     "verbosity": "medium",
     "image_preview": false,
