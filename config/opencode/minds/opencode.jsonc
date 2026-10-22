@@ -4,6 +4,15 @@
   "plugins": ["opencode-plugin-litellm", "opencode-models-discovery"],
   "providers": {
     "localai": { "settings": { "modelsDiscovery": { "enabled": false } } },
+    "itm-gw": {
+      "package": "@ai-sdk/openai-compatible",
+      "name": "IT Minds LLM Gateway",
+      "settings": {
+        "litellm": true,
+        "baseURL": "{env:ITM_LLM_GW_URL}",
+        "apiKey": "{env:ITM_LLM_GW_KEY}",
+      },
+    },
   },
   "agents": {
     "build": { "model": "itm-gw/qwen3.8" },
