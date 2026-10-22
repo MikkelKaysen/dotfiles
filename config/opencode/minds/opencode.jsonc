@@ -1,7 +1,7 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "itm-gw/qwen3.8",
-  "plugins": ["opencode-plugin-litellm", "opencode-models-discovery"],
+  "plugins": ["opencode-plugin-litellm"],
   "providers": {
     "itm-gw": {
       "package": "@ai-sdk/openai-compatible",
