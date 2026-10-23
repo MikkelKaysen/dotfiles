@@ -1,7 +1,18 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "default_agent": "quick-message",
-  "plugins": ["opencode-models-discovery", "./plugins/bare-layout/index.ts"],
+  "plugins": [
+    "opencode-models-discovery",
+    "./plugins/bare-layout/index.ts",
+    {
+      "package": "@devtheops/opencode-plugin-otel",
+      "options": {
+        "enabled": true,
+        "endpoint": "http://localhost:4318",
+        "protocol": "http/protobuf",
+      },
+    },
+  ],
   "mcp": {
     "servers": {
       "angular": {
