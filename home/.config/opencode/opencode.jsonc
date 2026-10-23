@@ -10,16 +10,11 @@
       },
       "filesystem": {
         "type": "local",
-        "command": [
-          "npx",
-          "-y",
-          "@modelcontextprotocol/server-filesystem",
-          ".",
-        ],
+        "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem"],
       },
       "git": {
         "type": "local",
-        "command": ["uvx", "mcp-server-git", "--repository", "."],
+        "command": ["uvx", "mcp-server-git"],
       },
       "fetch": {
         "type": "local",
