@@ -103,6 +103,7 @@ cargo-binstall = "latest"
 "cargo:agent-top" = "latest"
 "cargo:cargo-cache" = "latest"
 eza = "latest"
+uv = "latest"
 
 [settings]
 minimum_release_age = "12h"
