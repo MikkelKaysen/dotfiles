@@ -8,6 +8,23 @@
         "type": "local",
         "command": ["npx", "-y", "@angular/cli", "mcp"],
       },
+      "filesystem": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "@modelcontextprotocol/server-filesystem",
+          ".",
+        ],
+      },
+      "git": {
+        "type": "local",
+        "command": ["uvx", "mcp-server-git", "--repository", "."],
+      },
+      "fetch": {
+        "type": "local",
+        "command": ["uvx", "mcp-server-fetch"],
+      },
     },
   },
   "providers": {
