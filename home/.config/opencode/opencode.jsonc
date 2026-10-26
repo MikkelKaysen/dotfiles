@@ -3,7 +3,7 @@
   "default_agent": "quick-message",
   "plugins": [
     "opencode-models-discovery",
-    "./plugins/bare-layout",
+    "/home/mkay/code/personal/opencode-bare-layout",
     {
       "package": "@devtheops/opencode-plugin-otel",
       "options": {
