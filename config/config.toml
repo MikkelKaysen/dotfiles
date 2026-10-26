@@ -104,6 +104,7 @@ cargo-binstall = "latest"
 "cargo:cargo-cache" = "latest"
 eza = "latest"
 uv = "latest"
+codegraph = "latest"
 
 [settings]
 minimum_release_age = "12h"
