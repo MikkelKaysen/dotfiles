@@ -28,6 +28,10 @@ zmodule antoineco/zim-zoxide
 zmodule mikkelkaysen/zsh-mise
 zmodule mikkelkaysen/zsh-opencode-profiles
 
+# Personal
+
+zmodule ${HOME}/.config/zsh/personal
+
 # -------
 # Completion
 # -------
