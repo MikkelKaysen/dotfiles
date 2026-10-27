@@ -49,12 +49,6 @@
     { "action": "provider.use", "resource": "opencode", "effect": "deny" },
     { "action": "provider.use", "resource": "ollama", "effect": "deny" },
   ],
-  "references": {
-    "plan": {
-      "path": "~/.opencode/plan",
-      "description": "Plan files from plan mode",
-    },
-  },
   "experimental": {
     "todo": true,
   },
