@@ -15,21 +15,27 @@
   ],
   "mcp": {
     "servers": {
-      "angular": {
-        "type": "local",
-        "command": ["npx", "-y", "@angular/cli", "mcp"],
-      },
       "filesystem": {
         "type": "local",
-        "command": ["npx", "-y", "@modelcontextprotocol/server-filesystem"],
+        "command": [
+          "npx",
+          "-y",
+          "@modelcontextprotocol/server-filesystem"
+        ],
       },
       "git": {
         "type": "local",
-        "command": ["uvx", "mcp-server-git"],
+        "command": [
+          "uvx",
+          "mcp-server-git"
+        ],
       },
       "fetch": {
         "type": "local",
-        "command": ["uvx", "mcp-server-fetch"],
+        "command": [
+          "uvx",
+          "mcp-server-fetch"
+        ],
       },
     },
   },
@@ -46,8 +52,16 @@
     },
   },
   "policies": [
-    { "action": "provider.use", "resource": "opencode", "effect": "deny" },
-    { "action": "provider.use", "resource": "ollama", "effect": "deny" },
+    {
+      "action": "provider.use",
+      "resource": "opencode",
+      "effect": "deny"
+    },
+    {
+      "action": "provider.use",
+      "resource": "ollama",
+      "effect": "deny"
+    },
   ],
   "experimental": {
     "todo": true,
