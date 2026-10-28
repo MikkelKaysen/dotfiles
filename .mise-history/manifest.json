@@ -62,6 +62,12 @@
       "variants": []
     },
     {
+      "path": "config/templates/miserc.local.toml.tmpl",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "config/templates/zsh/zshenv.tmpl",
       "autosave": true,
       "encrypt": false,
