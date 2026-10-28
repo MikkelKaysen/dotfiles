@@ -35,6 +35,7 @@ mode = "0755"
 # --- Templates ---
 "~/.config/mise/templates/git" = { mode = "track" }
 "~/.config/mise/templates/zsh/zshenv.tmpl" = { mode = "track" }
+"~/.config/mise/templates/miserc.local.toml.tmpl" = { mode = "track" }
 
 # --- fnox config ---
 "~/.config/fnox/config.toml" = { mode = "track", encrypt = true }
@@ -43,6 +44,7 @@ mode = "0755"
 "~/.config/zsh" = { mode = "track" }
 "~/.zshrc" = { mode = "track" }
 "~/.zshenv" = { source = "templates/zsh/zshenv.tmpl", mode = "template", permissions = "0600" }
+"~/.config/mise/miserc.local.toml" = { source = "templates/miserc.local.toml.tmpl", mode = "template", permissions = "0600" }
 
 # --- git config ---
 "~/.config/mise/git" = { mode = "track" }
