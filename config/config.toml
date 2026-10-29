@@ -68,6 +68,7 @@ mode = "0755"
 
 # --- Neovim config ---
 "~/.config/nvim" = { mode = "track" }
+"~/.config/nvim.rewrite" = { mode = "track" }
 
 # --- opencode config ---
 "~/.config/mise/opencode" = { mode = "track" }
