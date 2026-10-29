@@ -110,6 +110,12 @@
       "variants": []
     },
     {
+      "path": "home/.config/nvim.rewrite",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "home/.config/opencode/agents",
       "autosave": true,
       "encrypt": false,
