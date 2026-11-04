@@ -9,7 +9,7 @@
       "settings": {
         "litellm": true,
         "baseURL": "{env:ITM_LLM_GW_URL}",
-        "apiKey": "{env:ITM_LLM_GW_KEY_TEST}",
+        "apiKey": "{env:ITM_LLM_GW_KEY}",
       },
     },
   },
