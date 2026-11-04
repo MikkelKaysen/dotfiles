@@ -10,7 +10,7 @@
   "session": {
     "sidebar": "auto",
     "scrollbar": false,
-    "thinking": "show",
+    "thinking": "hide",
     "markdown": "rendered",
     "grouping": "auto",
     "verbosity": "medium",
