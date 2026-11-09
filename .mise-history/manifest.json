@@ -143,7 +143,10 @@
       "path": "home/.config/opencode/plugins",
       "autosave": true,
       "encrypt": false,
-      "variants": []
+      "variants": [],
+      "exclude": [
+        "node_modules"
+      ]
     },
     {
       "path": "home/.config/starship.toml",
