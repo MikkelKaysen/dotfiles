@@ -3,6 +3,7 @@ login_shell = "/bin/zsh"
 
 [bootstrap.packages]
 "zypper:zsh" = { os = "linux" }
+"zypper:neovim" = { os = "linux" }
 "dnf:zsh" = { os = "linux" }
 "apt:zsh" = { os = "linux" }
 "pacman:zsh" = { os = "linux" }
