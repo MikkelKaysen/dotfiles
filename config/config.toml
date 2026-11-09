@@ -24,14 +24,8 @@ run = [
 mode = "0755"
 
 [dotfiles]
-
-# --- bat config ---
 "~/.config/bat" = { mode = "track" }
-
-# --- btop config ---
 "~/.config/btop" = { mode = "track" }
-
-# --- fnox config ---
 "~/.config/fnox/config.toml" = { mode = "track", encrypt = true }
 "~/.config/git/default.config" = { source = "git/default.config", mode = "copy" }
 "~/.config/git/default/core" = { source = "git/default/core", mode = "copy" }
@@ -42,23 +36,14 @@ mode = "0755"
 "~/.config/mise/config.minds.toml" = { mode = "track" }
 "~/.config/mise/config.toml" = { mode = "track" }
 "~/.config/mise/config.work.toml" = { mode = "track" }
-
-# --- git config ---
 "~/.config/mise/git" = { mode = "track" }
 "~/.config/mise/miserc.local.toml" = { source = "templates/miserc.local.toml.tmpl", mode = "template", permissions = "0600" }
-# --- mise config ---
 "~/.config/mise/miserc.toml" = { mode = "track" }
-
-# --- opencode config ---
 "~/.config/mise/opencode" = { mode = "track" }
 "~/.config/mise/settings.toml" = { mode = "track" }
-
-# --- Templates ---
 "~/.config/mise/templates/git" = { mode = "track" }
 "~/.config/mise/templates/miserc.local.toml.tmpl" = { mode = "track" }
 "~/.config/mise/templates/zsh/zshenv.tmpl" = { mode = "track" }
-
-# --- Neovim config ---
 "~/.config/nvim" = { mode = "track" }
 "~/.config/nvim.rewrite" = { mode = "track" }
 "~/.config/opencode/agents" = { mode = "track" }
@@ -67,14 +52,8 @@ mode = "0755"
 "~/.config/opencode/opencode.jsonc" = { mode = "track" }
 "~/.config/opencode/plugins" = {}
 "~/.config/opencode/profiles/personal/opencode.jsonc" = { source = "opencode/personal/opencode.jsonc", mode = "symlink" }
-
-# --- starship config ---
 "~/.config/starship.toml" = { mode = "track" }
-
-# --- zellij config ---
 "~/.config/zellij" = { mode = "track" }
-
-# --- zsh config ---
 "~/.config/zsh" = { mode = "track" }
 "~/.gitconfig" = { source = "templates/git/gitconfig.tmpl", mode = "template", permissions = "0644" }
 "~/.zshenv" = { source = "templates/zsh/zshenv.tmpl", mode = "template", permissions = "0600" }
