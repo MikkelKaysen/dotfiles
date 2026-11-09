@@ -1,34 +1,29 @@
 ---
 description: Primary implementation agent. Plans, reviews, and verifies; all execution (edits, shell, MCP) is delegated to the lite @tool-runner.
 mode: primary
-temperature: 0.1
-permission:
-  "*": deny
-  read:
-    "*": allow
-    "*.env": ask
-    "*.env.*": ask
-    "*.env.example": allow
-  glob: allow
-  grep: allow
-  list: allow
-  question: allow
-  todowrite: allow
-  skill: allow
-  external_directory: ask
-  doom_loop: ask
-  edit: deny
-  webfetch: allow
-  websearch: allow
-  bash: deny
-  task:
-    "*": deny
-    tool-runner: allow
-    explore: allow
-    debugger: allow
-    refactorer: allow
-    security-auditor: allow
-    commit-message: allow
+permissions:
+  - { action: "*", resource: "*", effect: deny }
+  - { action: read, resource: "*", effect: allow }
+  - { action: read, resource: "*.env", effect: ask }
+  - { action: read, resource: "*.env.*", effect: ask }
+  - { action: read, resource: "*.env.example", effect: allow }
+  - { action: glob, resource: "*", effect: allow }
+  - { action: grep, resource: "*", effect: allow }
+  - { action: question, resource: "*", effect: allow }
+  - { action: todowrite, resource: "*", effect: allow }
+  - { action: skill, resource: "*", effect: allow }
+  - { action: external_directory, resource: "*", effect: ask }
+  - { action: edit, resource: "*", effect: deny }
+  - { action: webfetch, resource: "*", effect: allow }
+  - { action: websearch, resource: "*", effect: allow }
+  - { action: shell, resource: "*", effect: deny }
+  - { action: subagent, resource: "*", effect: deny }
+  - { action: subagent, resource: tool-runner, effect: allow }
+  - { action: subagent, resource: explore, effect: allow }
+  - { action: subagent, resource: debugger, effect: allow }
+  - { action: subagent, resource: refactorer, effect: allow }
+  - { action: subagent, resource: security-auditor, effect: allow }
+  - { action: subagent, resource: commit-message, effect: allow }
 ---
 
 # Build

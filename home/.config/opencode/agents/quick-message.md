@@ -1,29 +1,23 @@
 ---
 description: Quick answers and light web research. Use for simple questions, lookups, and explanations that don't require code changes.
 mode: primary
-temperature: 0.3
-permission:
-  "*": deny
-  read:
-    "*": allow
-    "*.env": ask
-    "*.env.*": ask
-    "*.env.example": allow
-  glob: allow
-  grep: allow
-  list: allow
-  question: allow
-  todowrite: allow
-  skill: allow
-  external_directory: ask
-  doom_loop: ask
-  edit: deny
-  webfetch: allow
-  websearch: allow
-  bash:
-    "*": deny
-  task:
-    "*": deny
+permissions:
+  - { action: "*", resource: "*", effect: deny }
+  - { action: read, resource: "*", effect: allow }
+  - { action: read, resource: "*.env", effect: ask }
+  - { action: read, resource: "*.env.*", effect: ask }
+  - { action: read, resource: "*.env.example", effect: allow }
+  - { action: glob, resource: "*", effect: allow }
+  - { action: grep, resource: "*", effect: allow }
+  - { action: question, resource: "*", effect: allow }
+  - { action: todowrite, resource: "*", effect: allow }
+  - { action: skill, resource: "*", effect: allow }
+  - { action: external_directory, resource: "*", effect: ask }
+  - { action: edit, resource: "*", effect: deny }
+  - { action: webfetch, resource: "*", effect: allow }
+  - { action: websearch, resource: "*", effect: allow }
+  - { action: shell, resource: "*", effect: deny }
+  - { action: subagent, resource: "*", effect: deny }
 ---
 
 # Quick Message

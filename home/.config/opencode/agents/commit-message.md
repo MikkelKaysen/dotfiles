@@ -1,15 +1,13 @@
 ---
 description: Writes commit messages and PR descriptions from a diff. Use after changes are staged, before commit or PR.
 mode: subagent
-temperature: 0.3
-permission:
-  edit: deny
-  bash:
-    "*": deny
-    "git diff*": allow
-    "git status": allow
-    "git log*": allow
-    "git show*": allow
+permissions:
+  - { action: edit, resource: "*", effect: deny }
+  - { action: shell, resource: "*", effect: deny }
+  - { action: shell, resource: "git diff*", effect: allow }
+  - { action: shell, resource: "git status", effect: allow }
+  - { action: shell, resource: "git log*", effect: allow }
+  - { action: shell, resource: "git show*", effect: allow }
 ---
 
 # Commit Message Writer

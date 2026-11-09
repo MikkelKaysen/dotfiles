@@ -1,62 +1,58 @@
 ---
 description: Executes bounded workspace edits, shell commands, tests, and MCP calls for build. Requires a concrete scope and acceptance checks, not open-ended planning.
 mode: subagent
-temperature: 0.1
-permission:
-  "*": ask
-  read:
-    "*": allow
-    "*.env": ask
-    "*.env.*": ask
-    "*.env.example": allow
-  glob: allow
-  grep: allow
-  list: allow
-  skill: allow
-  edit: allow
-  external_directory: ask
-  bash:
-    # --- catch-all first: anything not explicitly listed still asks ---
-    "*": ask
-    # --- pre-allowed safe commands (must come AFTER "*" so they win) ---
-    "npm *": allow
-    "npx *": allow
-    "pnpm *": allow
-    "yarn *": allow
-    "node *": allow
-    "ng *": allow
-    "tsc*": allow
-    "eslint*": allow
-    "prettier*": allow
-    "vitest*": allow
-    "jest*": allow
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git add*": allow
-    "git commit*": allow
-    # --- hard denials LAST (so they override the allows above) ---
-    "git push*": deny
-    "git * push*": deny
-    "git reset*": deny
-    "git * reset*": deny
-    "git clean*": deny
-    "git * clean*": deny
-    "git add .": deny
-    "git add -A*": deny
-    "git add --all*": deny
-    "git add -u*": deny
-    "git commit --amend*": deny
-    "git commit --no-verify*": deny
-    "git commit -n*": deny
-    "rm -rf*": deny
-    "kubectl*": deny
-    "terraform*": deny
-    "helm*": deny
-    "flux*": deny
-    "scw*": deny
-  task: deny
+permissions:
+  # --- catch-all first: anything not explicitly listed still asks ---
+  - { action: "*", resource: "*", effect: ask }
+  - { action: read, resource: "*", effect: allow }
+  - { action: read, resource: "*.env", effect: ask }
+  - { action: read, resource: "*.env.*", effect: ask }
+  - { action: read, resource: "*.env.example", effect: allow }
+  - { action: glob, resource: "*", effect: allow }
+  - { action: grep, resource: "*", effect: allow }
+  - { action: skill, resource: "*", effect: allow }
+  - { action: edit, resource: "*", effect: allow }
+  - { action: external_directory, resource: "*", effect: ask }
+  # --- shell: pre-allowed safe commands (must come AFTER the "*" catch-all so they win) ---
+  - { action: shell, resource: "*", effect: ask }
+  - { action: shell, resource: "npm *", effect: allow }
+  - { action: shell, resource: "npx *", effect: allow }
+  - { action: shell, resource: "pnpm *", effect: allow }
+  - { action: shell, resource: "yarn *", effect: allow }
+  - { action: shell, resource: "node *", effect: allow }
+  - { action: shell, resource: "ng *", effect: allow }
+  - { action: shell, resource: "tsc*", effect: allow }
+  - { action: shell, resource: "eslint*", effect: allow }
+  - { action: shell, resource: "prettier*", effect: allow }
+  - { action: shell, resource: "vitest*", effect: allow }
+  - { action: shell, resource: "jest*", effect: allow }
+  - { action: shell, resource: "git status*", effect: allow }
+  - { action: shell, resource: "git diff*", effect: allow }
+  - { action: shell, resource: "git log*", effect: allow }
+  - { action: shell, resource: "git show*", effect: allow }
+  - { action: shell, resource: "git add*", effect: allow }
+  - { action: shell, resource: "git commit*", effect: allow }
+  # --- shell: hard denials LAST (so they override the allows above) ---
+  - { action: shell, resource: "git push*", effect: deny }
+  - { action: shell, resource: "git * push*", effect: deny }
+  - { action: shell, resource: "git reset*", effect: deny }
+  - { action: shell, resource: "git * reset*", effect: deny }
+  - { action: shell, resource: "git clean*", effect: deny }
+  - { action: shell, resource: "git * clean*", effect: deny }
+  - { action: shell, resource: "git add .", effect: deny }
+  - { action: shell, resource: "git add -A*", effect: deny }
+  - { action: shell, resource: "git add --all*", effect: deny }
+  - { action: shell, resource: "git add -u*", effect: deny }
+  - { action: shell, resource: "git commit --amend*", effect: deny }
+  - { action: shell, resource: "git commit --no-verify*", effect: deny }
+  - { action: shell, resource: "git commit -n*", effect: deny }
+  - { action: shell, resource: "rm -rf*", effect: deny }
+  - { action: shell, resource: "kubectl*", effect: deny }
+  - { action: shell, resource: "terraform*", effect: deny }
+  - { action: shell, resource: "helm*", effect: deny }
+  - { action: shell, resource: "flux*", effect: deny }
+  - { action: shell, resource: "scw*", effect: deny }
+  - { action: subagent, resource: "*", effect: deny }
 ---
 
 # Implementation Tool Runner

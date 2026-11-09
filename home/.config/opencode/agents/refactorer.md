@@ -1,44 +1,42 @@
 ---
 description: Applies focused refactors and bug fixes to existing code. Use once a plan or a root cause is established - this is the agent that writes the change.
 mode: subagent
-temperature: 0.2
-permission:
-  edit: allow
-  bash:
-    "*": ask
-    "ls*": allow
-    "find *": allow
-    "head*": allow
-    "tail*": allow
-    "cat*": allow
-    "wc*": allow
-    "tree*": allow
-    "file*": allow
-    "stat*": allow
-    "pwd": allow
-    "which*": allow
-    "diff*": allow
-    "grep *": allow
-    "git diff*": allow
-    "git status": allow
-    "git log*": allow
-    "git show*": allow
-    "npm test*": allow
-    "npm run*": allow
-    "npx*": allow
-    "pnpm*": allow
-    "yarn*": allow
-    "pytest*": allow
-    "python*": allow
-    "go test*": allow
-    "go build*": allow
-    "cargo test*": allow
-    "cargo build*": allow
-    "make*": allow
-    "node*": allow
-    "rm -rf*": deny
-    "git push*": deny
-    "git reset --hard*": deny
+permissions:
+  - { action: edit, resource: "*", effect: allow }
+  - { action: shell, resource: "*", effect: ask }
+  - { action: shell, resource: "ls*", effect: allow }
+  - { action: shell, resource: "find *", effect: allow }
+  - { action: shell, resource: "head*", effect: allow }
+  - { action: shell, resource: "tail*", effect: allow }
+  - { action: shell, resource: "cat*", effect: allow }
+  - { action: shell, resource: "wc*", effect: allow }
+  - { action: shell, resource: "tree*", effect: allow }
+  - { action: shell, resource: "file*", effect: allow }
+  - { action: shell, resource: "stat*", effect: allow }
+  - { action: shell, resource: "pwd", effect: allow }
+  - { action: shell, resource: "which*", effect: allow }
+  - { action: shell, resource: "diff*", effect: allow }
+  - { action: shell, resource: "grep *", effect: allow }
+  - { action: shell, resource: "git diff*", effect: allow }
+  - { action: shell, resource: "git status", effect: allow }
+  - { action: shell, resource: "git log*", effect: allow }
+  - { action: shell, resource: "git show*", effect: allow }
+  - { action: shell, resource: "npm test*", effect: allow }
+  - { action: shell, resource: "npm run*", effect: allow }
+  - { action: shell, resource: "npx*", effect: allow }
+  - { action: shell, resource: "pnpm*", effect: allow }
+  - { action: shell, resource: "yarn*", effect: allow }
+  - { action: shell, resource: "pytest*", effect: allow }
+  - { action: shell, resource: "python*", effect: allow }
+  - { action: shell, resource: "go test*", effect: allow }
+  - { action: shell, resource: "go build*", effect: allow }
+  - { action: shell, resource: "cargo test*", effect: allow }
+  - { action: shell, resource: "cargo build*", effect: allow }
+  - { action: shell, resource: "make*", effect: allow }
+  - { action: shell, resource: "node*", effect: allow }
+  - { action: shell, resource: "rm -rf*", effect: deny }
+  - { action: shell, resource: "git push*", effect: deny }
+  - { action: shell, resource: "git reset --hard*", effect: deny }
 ---
 
 # Refactorer
