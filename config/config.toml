@@ -50,7 +50,7 @@ mode = "0755"
 "~/.config/opencode/cli.json" = { mode = "track" }
 "~/.config/opencode/commands" = { mode = "track" }
 "~/.config/opencode/opencode.jsonc" = { mode = "track" }
-"~/.config/opencode/plugins" = {}
+"~/.config/opencode/plugins" = { mode = "track" }
 "~/.config/opencode/profiles/personal/opencode.jsonc" = { source = "opencode/personal/opencode.jsonc", mode = "symlink" }
 "~/.config/starship.toml" = { mode = "track" }
 "~/.config/zellij" = { mode = "track" }

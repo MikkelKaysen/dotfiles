@@ -140,6 +140,12 @@
       "variants": []
     },
     {
+      "path": "home/.config/opencode/plugins",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "home/.config/starship.toml",
       "autosave": true,
       "encrypt": false,
