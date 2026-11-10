@@ -895,8 +895,17 @@ local function classify(abs, cwd)
     error("repo area is too broad: " .. area, 0)
   end
 
-  -- Never contain home (covers '/'), the current cwd, the primary or Git metadata.
-  for _, x in ipairs({ home, cwd, common, absgit, primary }) do
+  -- Never contain home (covers '/'), the cwd, its work tree, the primary or Git metadata.
+  -- (With a separate git dir, Git lists the gitdir as the primary record; the work tree is covered here.)
+  local protected = { home, cwd, common, absgit }
+  local top = git_out(cwd, { "rev-parse", "--show-toplevel" })
+  if top then
+    protected[#protected + 1] = top
+  end
+  if primary then
+    protected[#protected + 1] = primary
+  end
+  for _, x in ipairs(protected) do
     if contains_path(canon, x) then
       error("target contains protected path " .. x, 0)
     end
@@ -981,7 +990,8 @@ local function switch_to(path)
   Hooks = Hooks or require("git-worktree.hooks")
   local prev = vim.fn.getcwd()
   local Config = require("git-worktree.config")
-  vim.cmd({ cmd = Config.change_directory_command, args = { path } })
+  -- nvim_cmd does not escape args (verified: '#' and '%' are expanded), so escape here.
+  vim.cmd({ cmd = Config.change_directory_command, args = { vim.fn.fnameescape(path) } })
   if Config.clearjumps_on_change then
     vim.cmd("clearjumps")
   end
