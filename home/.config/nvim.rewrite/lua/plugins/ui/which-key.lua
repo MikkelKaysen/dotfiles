@@ -23,6 +23,7 @@ wk.setup({
       { "[", group = "prev" },
       { "]", group = "next" },
       { "g", group = "goto" },
+      { "gr", group = "lsp refs/actions" },
       { "gs", group = "surround" },
       { "z", group = "fold" },
       {
@@ -43,6 +44,15 @@ wk.setup({
       -- better descriptions
       { "gx", desc = "Open with system app" },
     },
+    -- native Neovim 0.12 LSP defaults (description-only; mappings are not redefined)
+    { "grn", desc = "Rename", mode = "n" },
+    { "gra", desc = "Code Action", mode = { "n", "x" } },
+    { "grr", desc = "References", mode = "n" },
+    { "gri", desc = "Goto Implementation", mode = "n" },
+    { "grt", desc = "Goto Type Definition", mode = "n" },
+    { "grx", desc = "Run Codelens", mode = "n" },
+    { "gO", desc = "Document Symbols", mode = "n" },
+    { "<C-s>", desc = "Signature Help", mode = "i" },
   },
 })
 
