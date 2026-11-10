@@ -671,11 +671,15 @@ local uv = vim.uv or vim.loop
 local Hooks = nil -- git-worktree.hooks, required lazily when a flow runs
 
 -- Direct children of a bare common dir that Git itself uses; never a worktree.
+-- (Unknown custom dirs are not guessed: they stay allowed as user paths.)
 local RESERVED = {}
 for _, n in ipairs({
   "objects", "refs", "worktrees", "hooks", "info", "logs", "branches", "modules", "lfs",
   "rr-cache", "config", "config.worktree", "HEAD", "packed-refs", "shallow", "commondir",
-  "description", "index", "FETCH_HEAD", "ORIG_HEAD",
+  "description", "index", "FETCH_HEAD", "ORIG_HEAD", "MERGE_HEAD", "MERGE_MSG", "SQUASH_MSG",
+  "AUTO_MERGE", "REBASE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "COMMIT_EDITMSG",
+  "BISECT_LOG", "BISECT_START", "gc.log", "gc.pid", "svn", "rebase-apply", "rebase-merge",
+  "sequencer",
 }) do
   RESERVED[n] = true
 end
@@ -746,37 +750,39 @@ local function dir_entries(p)
   return out
 end
 
--- Refuse a plain directory that holds Git metadata (.git entries or bare repos).
--- Symlinks are not followed: they are removed as links, never traversed.
-local function scan_foreign(dir, budget)
+-- True when `p` holds Git metadata: a .git entry, or bare-repo markers.
+local function is_git_repo_dir(p)
+  return lstat_strict(p .. "/.git") ~= nil
+    or (lstat_strict(p .. "/HEAD") ~= nil and lstat_strict(p .. "/objects") ~= nil and lstat_strict(p .. "/refs") ~= nil)
+end
+
+-- Refuse nested Git repos and cross-device directories while walking `dir`.
+-- Symlinks are never followed (removed as links). `top` skips the target's own
+-- .git (a registered worktree's own gitfile) but still inspects its children.
+local function scan_foreign(dir, budget, dev, top)
   local ents = dir_entries(dir)
   budget.n = budget.n + #ents
   if budget.n > MAX_SCAN then
     error("too many entries to verify safely under " .. dir, 0)
   end
-  local names = {}
-  for _, e in ipairs(ents) do
-    names[e.name] = true
-  end
-  if names[".git"] then
-    error("contains a nested repository (.git): " .. dir, 0)
-  end
-  if names.HEAD and names.objects and names.refs then
-    error("contains a bare repository: " .. dir, 0)
+  if not top and is_git_repo_dir(dir) then
+    error("contains a nested repository: " .. dir, 0)
   end
   for _, e in ipairs(ents) do
-    local typ = e.type
-    if typ == nil then
+    if e.type ~= "link" then
       local st = lstat_strict(dir .. "/" .. e.name)
-      typ = st and st.type
-    end
-    if typ == "directory" then
-      scan_foreign(dir .. "/" .. e.name, budget)
+      if st and st.type == "directory" then
+        if st.dev ~= dev then
+          error("crosses a device boundary: " .. dir .. "/" .. e.name, 0)
+        end
+        scan_foreign(dir .. "/" .. e.name, budget, dev, false)
+      end
     end
   end
 end
 
 -- Full registrations from `git worktree list` (bare and stale entries included).
+-- The first record is always the primary checkout (or the bare repo).
 ---@return table[]?, string?
 local function registrations(cwd)
   local lines, err = git_lines(cwd, { "worktree", "list", "--porcelain" })
@@ -816,6 +822,32 @@ local function is_layout_a(root, common)
   return norm(target) == common
 end
 
+-- Strict descendant test on normalized absolute paths.
+local function inside(dir, p)
+  return p ~= dir and vim.startswith(p, dir .. "/")
+end
+
+-- Destructive preconditions for an existing target (plain or registered).
+-- The target must be strictly inside the repo area, sit on the same device as
+-- its parent, and no ancestor below the area may be a foreign repo.
+local function check_destructive(canon, leaf, area, common, registered)
+  if not inside(area, canon) then
+    error("existing directory is outside the repo area " .. area, 0)
+  end
+  local pst = lstat_strict(vim.fs.dirname(canon))
+  if not pst or pst.dev ~= leaf.dev then
+    error("target is a mount point (device differs from its parent)", 0)
+  end
+  local a = vim.fs.dirname(canon)
+  while inside(area, a) do
+    if a ~= common and is_git_repo_dir(a) then
+      error("ancestor is a git repository: " .. a, 0)
+    end
+    a = vim.fs.dirname(a)
+  end
+  scan_foreign(canon, { n = 0 }, leaf.dev, registered)
+end
+
 -- Classify the create target. Raises a readable error for every refusal.
 -- Returns { kind = "missing"|"empty"|"plain"|"registered", stale, canon, leaf }.
 local function classify(abs, cwd)
@@ -829,7 +861,7 @@ local function classify(abs, cwd)
   end
 
   local regs, rerr = registrations(cwd)
-  if not regs then
+  if not regs or #regs == 0 then
     error("cannot list worktrees: " .. tostring(rerr), 0)
   end
   local common = git_out(cwd, { "rev-parse", "--path-format=absolute", "--git-common-dir" })
@@ -846,18 +878,25 @@ local function classify(abs, cwd)
   end
   home = norm(home)
 
-  -- Repo area: the only place existing non-empty directories may be replaced.
-  local area
-  if is_bare then
-    local root = vim.fs.dirname(common)
-    area = is_layout_a(root, common) and root or common
-  else
-    area = vim.fs.dirname(vim.fs.dirname(common))
-  end
-  area = norm(area)
+  -- Primary: the first `worktree list` record (also with a separate git dir).
+  local primary = (not is_bare and regs[1] and not regs[1].bare) and norm(regs[1].path) or nil
 
-  -- Never contain home (covers '/'), the current cwd, or any Git metadata path.
-  for _, x in ipairs({ home, cwd, common, absgit }) do
+  -- Repo area: the only place existing directories may be replaced.
+  local area
+  if primary then
+    area = vim.fs.dirname(primary)
+  elseif is_bare then
+    local root = vim.fs.dirname(common)
+    area = is_layout_a(root, common) and norm(root) or common
+  else
+    error("cannot identify the primary checkout", 0)
+  end
+  if area == "/" or (area ~= home and vim.startswith(home, area .. "/")) then
+    error("repo area is too broad: " .. area, 0)
+  end
+
+  -- Never contain home (covers '/'), the current cwd, the primary or Git metadata.
+  for _, x in ipairs({ home, cwd, common, absgit, primary }) do
     if contains_path(canon, x) then
       error("target contains protected path " .. x, 0)
     end
@@ -893,7 +932,12 @@ local function classify(abs, cwd)
     if exact.bare then
       error("target is a bare repository", 0)
     end
-    return { kind = "registered", stale = leaf == nil or exact.prunable, canon = canon, leaf = leaf }
+    if leaf then
+      check_destructive(canon, leaf, area, common, true)
+    end
+    -- Stale = registration with no directory at all. A prunable record whose
+    -- directory still exists must be confirmed like any other worktree.
+    return { kind = "registered", stale = leaf == nil, canon = canon, leaf = leaf }
   end
   if leaf == nil then
     return { kind = "missing", canon = canon }
@@ -904,13 +948,7 @@ local function classify(abs, cwd)
   if #dir_entries(canon) == 0 then
     return { kind = "empty", canon = canon, leaf = leaf }
   end
-  if norm(vim.fs.dirname(canon)) ~= area then
-    error("existing non-empty directory is outside the repo area " .. area, 0)
-  end
-  if area == home then
-    error("refusing to replace a directory inside the home directory", 0)
-  end
-  scan_foreign(canon, { n = 0 })
+  check_destructive(canon, leaf, area, common, false)
   return { kind = "plain", canon = canon, leaf = leaf }
 end
 
@@ -937,7 +975,8 @@ local function snapshot(abs, cwd, branch)
   }
 end
 
--- Switch like the plugin: escaped cd, clearjumps, SWITCH hooks.
+-- Switch like the plugin: cd through nvim_cmd args (no manual escaping), clearjumps,
+-- SWITCH hooks. Only the path is an argument; nothing is concatenated into a string.
 local function switch_to(path)
   Hooks = Hooks or require("git-worktree.hooks")
   local prev = vim.fn.getcwd()
@@ -1007,9 +1046,15 @@ local function create_flow(cwd, sel, input)
         return fail("directory still present after deletion; not creating " .. cls.canon)
       end
     elseif cls.kind == "registered" then
+      if cls.stale and lstat_strict(cls.canon) then
+        return fail("a directory appeared at " .. cls.canon .. "; not removing its registration")
+      end
       local ok, err = git(cwd, { "worktree", "remove", "--force", cls.canon })
       if not ok then
         return fail(("git worktree remove --force failed for %s (branch kept):\n%s"):format(cls.canon, err))
+      end
+      if lstat_strict(cls.canon) then
+        return fail("directory still present after git worktree remove; not creating " .. cls.canon)
       end
     end
     add(cls)
