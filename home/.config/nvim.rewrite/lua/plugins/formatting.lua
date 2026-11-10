@@ -158,6 +158,7 @@ vim.api.nvim_create_autocmd({ "BufWritePost", "BufReadPost", "InsertLeave" }, {
 -- Self-lazy-loading: the plugin file registers the Overseer* commands.
 require("overseer").setup({
   dap = false,
+  disable_template_modules = { "overseer.template.mise" },
   task_list = {
     keymaps = {
       ["<C-j>"] = false,
