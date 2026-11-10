@@ -458,17 +458,45 @@ end
 -- Fields: refname, symref (non-empty for remote HEAD), objectname, date, subject.
 local REF_FORMAT = "--format=%(refname)\t%(symref)\t%(objectname)\t%(committerdate:short)\t%(subject)"
 
+-- True when Neovim's cwd is no longer the directory the flow was started from.
+-- The worktree helper reads the ambient cwd, so creation must not proceed then.
+---@param cwd string
+---@return boolean
+local function cwd_changed(cwd)
+  return norm(vim.fn.getcwd()) ~= norm(cwd)
+end
+
+-- Reject newly entered worktree paths that would become option-like arguments
+-- or break the plugin's unescaped `cd` (vim.cmd) command.
+---@param p string
+---@return string?
+local function path_problem(p)
+  if vim.startswith(p, "-") then
+    return "must not start with '-'"
+  end
+  if p:find("[\n\r|]") then
+    return "must not contain a newline, carriage return or '|'"
+  end
+  return nil
+end
+
 -- Scan local and remote-tracking branches for the creation picker. Symbolic
 -- remote HEAD refs are skipped. Branches checked out in a worktree are kept
 -- but flagged (`in_use`) so they are shown as unavailable and refused.
 ---@param cwd string
 ---@return table?, string?
 local function scan_branches(cwd)
+  if cwd_changed(cwd) then
+    return nil, "working directory changed since the picker was opened; reopen <leader>gW"
+  end
   local lines, err = git_lines(cwd, { "for-each-ref", REF_FORMAT, "refs/heads", "refs/remotes" })
   if not lines then
     return nil, err
   end
-  local remotes = git_lines(cwd, { "remote" }) or {}
+  local remotes, rerr = git_lines(cwd, { "remote" })
+  if not remotes then
+    return nil, (rerr ~= "" and rerr) or "git remote failed"
+  end
   table.sort(remotes, function(a, b)
     return #a > #b -- longest first, so remote prefixes match exactly
   end)
@@ -595,7 +623,8 @@ end
 -- Ask for the worktree path (default ../<branch>, slashes kept), then create it.
 ---@param st table
 ---@param sel { branch: string, upstream: string? }
-local function prompt_path_and_create(st, sel)
+---@param cwd string
+local function prompt_path_and_create(st, sel, cwd)
   if st.remote_shorts[sel.branch] then
     return vim.notify(
       ("'%s' is also a remote-tracking branch name; refusing to create an ambiguous worktree"):format(sel.branch),
@@ -606,6 +635,13 @@ local function prompt_path_and_create(st, sel)
     path = vim.trim(path or "")
     if path == "" then
       return
+    end
+    if cwd_changed(cwd) then
+      return vim.notify("Working directory changed; retry <leader>gW from the original repository", vim.log.levels.ERROR)
+    end
+    local problem = path_problem(path)
+    if problem then
+      return vim.notify(("Worktree path '%s' %s"):format(path, problem), vim.log.levels.ERROR)
     end
     require("git-worktree").create_worktree(path, sel.branch, sel.upstream)
   end)
