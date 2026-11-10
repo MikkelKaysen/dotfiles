@@ -914,6 +914,11 @@ local function classify(abs, cwd)
       error("target contains protected path " .. x, 0)
     end
   end
+  -- Explicit guard: nothing equal to or inside the current work tree (only when one exists;
+  -- a bare common dir has no toplevel, so its children stay allowed).
+  if top and contains_path(top, canon) then
+    error("target is inside the current work tree " .. top, 0)
+  end
 
   local exact
   for _, r in ipairs(regs) do
