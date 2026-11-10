@@ -1117,6 +1117,9 @@ local function create_flow(cwd, sel, input)
     end
     clear_and_add(again)
   end))
+  if not selected then
+    fail("Could not open the confirmation prompt: " .. tostring(serr))
+  end
 end
 
 -- Ask for the worktree path (default from default_worktree_path), then create it.
