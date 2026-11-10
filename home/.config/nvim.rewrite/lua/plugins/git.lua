@@ -620,7 +620,44 @@ local function resolve_typed(st, cwd, name)
   return { branch = name, upstream = nil }
 end
 
--- Ask for the worktree path (default ../<branch>, slashes kept), then create it.
+-- Default path for a new worktree of `branch` (slashes kept). Only bare-repo
+-- layouts change it; everything else, and any detection failure, keeps the
+-- sibling default "../<branch>".
+--   Layout B: the shared git dir is itself the bare repo -> <common>/<branch>.
+--   Layout A: <root>/.git is a gitdir file whose target resolves to the bare
+--             shared dir (e.g. <root>/.bare) -> <root>/<branch>.
+---@param cwd string
+---@param branch string
+---@return string
+local function default_worktree_path(cwd, branch)
+  local fallback = "../" .. branch
+  local ok, result = pcall(function()
+    local common = git_out(cwd, { "rev-parse", "--path-format=absolute", "--git-common-dir" })
+    if not common or common == "" then
+      return fallback
+    end
+    local common_key = norm(common)
+    local cfg = vim.system({ "git", "--git-dir", common_key, "config", "--bool", "core.bare" }, { text = true }):wait()
+    if cfg.code ~= 0 or vim.trim(cfg.stdout or "") ~= "true" then
+      return fallback
+    end
+    local root = vim.fs.dirname(common_key)
+    local pointer = vim.fn.readfile(root .. "/.git", "", 1)
+    local target = type(pointer[1]) == "string" and pointer[1]:match("^gitdir:%s*(.-)%s*$") or nil
+    if target and target ~= "" then
+      if not vim.startswith(target, "/") then
+        target = root .. "/" .. target
+      end
+      if norm(target) == common_key and vim.fn.isdirectory(root .. "/.git") == 0 then
+        return root .. "/" .. branch
+      end
+    end
+    return common_key .. "/" .. branch
+  end)
+  return ok and result or fallback
+end
+
+-- Ask for the worktree path (default from default_worktree_path), then create it.
 ---@param st table
 ---@param sel { branch: string, upstream: string? }
 ---@param cwd string
