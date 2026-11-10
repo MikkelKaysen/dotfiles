@@ -441,24 +441,283 @@ function M.worktree_select()
   })
 end
 
--- <leader>gW — prompt for branch + path, then create a worktree and switch to it
-function M.worktree_create()
-  Snacks.input({ prompt = "New worktree branch:" }, function(branch)
-    branch = (branch or ""):gsub("^%s+", ""):gsub("%s+$", "")
-    if branch == "" then
+-- ---------------------------------------------------------------------------
+-- worktree creation (<leader>gW)
+-- ---------------------------------------------------------------------------
+
+-- Run git and return stdout lines (empty lines dropped), or nil + message.
+---@return string[]?, string?
+local function git_lines(cwd, args)
+  local res = vim.system(vim.list_extend({ "git" }, args), { cwd = cwd, text = true }):wait()
+  if res.code ~= 0 then
+    return nil, vim.trim(res.stderr or "")
+  end
+  return vim.split(res.stdout or "", "\n", { plain = true, trimempty = true }), nil
+end
+
+-- Fields: refname, symref (non-empty for remote HEAD), objectname, date, subject.
+local REF_FORMAT = "--format=%(refname)\t%(symref)\t%(objectname)\t%(committerdate:short)\t%(subject)"
+
+-- Scan local and remote-tracking branches for the creation picker. Symbolic
+-- remote HEAD refs are skipped. Branches checked out in a worktree are kept
+-- but flagged (`in_use`) so they are shown as unavailable and refused.
+---@param cwd string
+---@return table?, string?
+local function scan_branches(cwd)
+  local lines, err = git_lines(cwd, { "for-each-ref", REF_FORMAT, "refs/heads", "refs/remotes" })
+  if not lines then
+    return nil, err
+  end
+  local remotes = git_lines(cwd, { "remote" }) or {}
+  table.sort(remotes, function(a, b)
+    return #a > #b -- longest first, so remote prefixes match exactly
+  end)
+  local checked = {} -- local branch name -> worktree path
+  for _, wt in ipairs(worktrees() or {}) do
+    if wt.branch then
+      checked[wt.branch] = wt.path
+    end
+  end
+  local st = { entries = {}, locals = {}, remote_entries = {}, remote_shorts = {}, checked = checked }
+  for _, line in ipairs(lines) do
+    local ref, symref, sha, date, subject = line:match("^([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)\t?(.*)$")
+    if ref and symref == "" then
+      local kind, name, short
+      if vim.startswith(ref, "refs/heads/") then
+        kind, name = "local", ref:sub(#"refs/heads/" + 1)
+        short = name
+      elseif vim.startswith(ref, "refs/remotes/") then
+        local rest = ref:sub(#"refs/remotes/" + 1)
+        for _, r in ipairs(remotes) do
+          if vim.startswith(rest, r .. "/") then
+            kind, short, name = "remote", rest, rest:sub(#r + 2)
+            break
+          end
+        end
+      end
+      if kind and name ~= "" then
+        local in_use = checked[name] ~= nil
+        local e = {
+          kind = kind,
+          name = name, -- local branch name (remote: the name a local would get)
+          short = short, -- full remote-tracking name, e.g. origin/feature/x
+          display = short,
+          sha = sha,
+          date = date,
+          subject = subject or "",
+          kind_label = in_use and "in use" or kind,
+          in_use = in_use,
+        }
+        e.text = table.concat({ short, kind, subject or "" }, " ")
+        st.entries[#st.entries + 1] = e
+        if kind == "local" then
+          st.locals[name] = e
+        else
+          st.remote_entries[#st.remote_entries + 1] = e
+          st.remote_shorts[short] = e
+        end
+      end
+    end
+  end
+  return st
+end
+
+-- Turn a scanned entry into { branch, upstream } or nil (after notifying).
+-- Existing local branches are used as-is with no upstream change. A remote
+-- without a local gets a new local tracking it; if a local already exists it
+-- is used instead and a warning is shown when the hashes differ.
+---@return { branch: string, upstream: string? }?
+local function resolve_entry(st, e)
+  local lname = e.name
+  if st.checked[lname] then
+    vim.notify(("Branch '%s' is already checked out in %s"):format(lname, st.checked[lname]), vim.log.levels.WARN)
+    return nil
+  end
+  local loc = st.locals[lname]
+  if loc then
+    if e.kind == "remote" and loc.sha ~= e.sha then
+      vim.notify(
+        ("Local '%s' (%s) differs from %s (%s); using the local branch and leaving its upstream unchanged"):format(
+          lname,
+          loc.sha:sub(1, 7),
+          e.short,
+          e.sha:sub(1, 7)
+        ),
+        vim.log.levels.WARN
+      )
+    end
+    return { branch = lname, upstream = nil }
+  end
+  return { branch = lname, upstream = e.short }
+end
+
+-- Resolve a typed name that matched no picker item. Existing locals and remote
+-- branches with the same local name are used; otherwise a new branch from HEAD.
+---@return { branch: string, upstream: string? }?
+local function resolve_typed(st, cwd, name)
+  if name == "HEAD" then
+    vim.notify("'HEAD' is not a valid branch name", vim.log.levels.ERROR)
+    return nil
+  end
+  local ok, msg = git(cwd, { "check-ref-format", "--branch", name })
+  if not ok then
+    vim.notify(("'%s' is not a valid branch name:\n%s"):format(name, msg), vim.log.levels.ERROR)
+    return nil
+  end
+  if st.locals[name] then
+    return resolve_entry(st, st.locals[name])
+  end
+  if st.remote_shorts[name] then
+    return resolve_entry(st, st.remote_shorts[name])
+  end
+  local matches = {}
+  for _, r in ipairs(st.remote_entries) do
+    if r.name == name then
+      matches[#matches + 1] = r.short
+    end
+  end
+  if #matches > 1 then
+    vim.notify(
+      ("'%s' exists on several remotes; select it from the list:\n%s"):format(name, table.concat(matches, "\n")),
+      vim.log.levels.WARN
+    )
+    return nil
+  end
+  if #matches == 1 then
+    return resolve_entry(st, st.remote_entries[1].name == name and st.remote_shorts[matches[1]] or nil)
+  end
+  return { branch = name, upstream = nil }
+end
+
+-- Ask for the worktree path (default ../<branch>, slashes kept), then create it.
+---@param st table
+---@param sel { branch: string, upstream: string? }
+local function prompt_path_and_create(st, sel)
+  if st.remote_shorts[sel.branch] then
+    return vim.notify(
+      ("'%s' is also a remote-tracking branch name; refusing to create an ambiguous worktree"):format(sel.branch),
+      vim.log.levels.ERROR
+    )
+  end
+  Snacks.input({ prompt = "Worktree path:", default = "../" .. sel.branch }, function(path)
+    path = vim.trim(path or "")
+    if path == "" then
       return
     end
-    Snacks.input(
-      { prompt = "Worktree path:", default = "../" .. branch },
-      function(path)
-        path = (path or ""):gsub("^%s+", ""):gsub("%s+$", "")
-        if path == "" then
-          return
-        end
-        require("git-worktree").create_worktree(path, branch, nil)
-      end
-    )
+    require("git-worktree").create_worktree(path, sel.branch, sel.upstream)
   end)
+end
+
+-- Only one manual fetch may run at a time.
+local fetching = false
+
+-- Asynchronously run `git fetch --all --prune` in the launch cwd, then refresh
+-- the picker's list on success. Safe if the picker was closed meanwhile.
+---@param picker table?
+---@param cwd string
+local function fetch_remotes(picker, cwd)
+  if fetching then
+    return vim.notify("A fetch is already in progress", vim.log.levels.WARN)
+  end
+  fetching = true
+  vim.notify("Fetching all remotes…", vim.log.levels.INFO)
+  local ok, err = pcall(vim.system, { "git", "fetch", "--all", "--prune" }, { cwd = cwd, text = true }, function(res)
+    vim.schedule(function()
+      fetching = false
+      if res.code ~= 0 then
+        local msg = vim.trim(res.stderr or "")
+        if msg == "" then
+          msg = "git exited with code " .. res.code
+        end
+        return vim.notify("git fetch --all --prune failed:\n" .. msg, vim.log.levels.ERROR)
+      end
+      if picker and not picker.closed then
+        pcall(picker.find, picker, { refresh = true })
+      end
+      vim.notify("Fetched all remotes", vim.log.levels.INFO)
+    end)
+  end)
+  if not ok then
+    fetching = false
+    vim.notify("Could not start git fetch: " .. tostring(err), vim.log.levels.ERROR)
+  end
+end
+
+-- <leader>gW — pick a local/remote branch (or type a new name) and create a
+-- worktree for it. Creation uses the plugin's create_worktree.
+function M.worktree_create()
+  local cwd = vim.fn.getcwd()
+  local st, err = scan_branches(cwd)
+  if not st then
+    return vim.notify("Could not list git branches (are you in a git repository?): " .. (err or ""), vim.log.levels.ERROR)
+  end
+
+  local gap = "  "
+  local w = { 0, 0, 0 } -- name, type, date widths (refreshed on each find)
+  local function pad(s, width)
+    return s .. string.rep(" ", width - vim.fn.strdisplaywidth(s))
+  end
+
+  Snacks.picker({
+    title = "Create Worktree from Branch",
+    layout = { preview = false },
+    finder = function()
+      local fresh, ferr = scan_branches(cwd)
+      if not fresh then
+        vim.notify("Could not list git branches: " .. (ferr or ""), vim.log.levels.ERROR)
+        return {}
+      end
+      w = { 0, 0, 0 }
+      for _, e in ipairs(fresh.entries) do
+        w[1] = math.max(w[1], vim.fn.strdisplaywidth(e.display))
+        w[2] = math.max(w[2], vim.fn.strdisplaywidth(e.kind_label))
+        w[3] = math.max(w[3], vim.fn.strdisplaywidth(e.date))
+      end
+      return fresh.entries
+    end,
+    actions = {
+      worktree_fetch = function(p)
+        fetch_remotes(p, cwd)
+      end,
+    },
+    win = {
+      input = {
+        keys = { ["<a-f>"] = { "worktree_fetch", mode = { "n", "i" }, desc = "Fetch all remotes" } },
+      },
+      list = {
+        keys = { ["<a-f>"] = { "worktree_fetch", mode = { "n" }, desc = "Fetch all remotes" } },
+      },
+    },
+    format = function(item)
+      local e = item
+      return {
+        { pad(e.display, w[1]), e.in_use and "Comment" or (e.kind == "remote" and "Special" or "Function") },
+        { gap },
+        { pad(e.kind_label, w[2]), e.in_use and "WarningMsg" or "Comment" },
+        { gap },
+        { pad(e.date, w[3]), "Number" },
+        { gap },
+        { e.subject, "Normal" },
+      }
+    end,
+    confirm = function(p, item)
+      local typed = vim.trim(p.input:get() or "")
+      p:close()
+      local fresh, ferr = scan_branches(cwd)
+      if not fresh then
+        return vim.notify("Could not list git branches: " .. (ferr or ""), vim.log.levels.ERROR)
+      end
+      local sel
+      if item then
+        sel = resolve_entry(fresh, item)
+      elseif typed ~= "" then
+        sel = resolve_typed(fresh, cwd, typed)
+      end
+      if sel then
+        prompt_path_and_create(fresh, sel)
+      end
+    end,
+  })
 end
 
 return M
