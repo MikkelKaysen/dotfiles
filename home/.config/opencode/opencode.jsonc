@@ -66,4 +66,11 @@
   "experimental": {
     "todo": true,
   },
+  "agents": {
+    "plan": {
+      "permissions": [
+        { "action": "subagent", "resource": "commit-message", "effect": "allow" },
+      ],
+    },
+  },
 }
