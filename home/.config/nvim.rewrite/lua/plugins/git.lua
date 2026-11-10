@@ -642,14 +642,19 @@ local function default_worktree_path(cwd, branch)
       return fallback
     end
     local root = vim.fs.dirname(common_key)
-    local pointer = vim.fn.readfile(root .. "/.git", "", 1)
-    local target = type(pointer[1]) == "string" and pointer[1]:match("^gitdir:%s*(.-)%s*$") or nil
-    if target and target ~= "" then
-      if not vim.startswith(target, "/") then
-        target = root .. "/" .. target
-      end
-      if norm(target) == common_key and vim.fn.isdirectory(root .. "/.git") == 0 then
-        return root .. "/" .. branch
+    local uv = vim.uv or vim.loop
+    local dotgit = root .. "/.git"
+    local st = uv.fs_stat(dotgit)
+    if st and st.type == "file" then
+      local read_ok, lines = pcall(vim.fn.readfile, dotgit, "", 1)
+      local target = read_ok and type(lines[1]) == "string" and lines[1]:match("^gitdir:%s*(.-)%s*$") or nil
+      if target and target ~= "" then
+        if not vim.startswith(target, "/") then
+          target = root .. "/" .. target
+        end
+        if norm(target) == common_key then
+          return root .. "/" .. branch
+        end
       end
     end
     return common_key .. "/" .. branch
@@ -668,7 +673,7 @@ local function prompt_path_and_create(st, sel, cwd)
       vim.log.levels.ERROR
     )
   end
-  Snacks.input({ prompt = "Worktree path:", default = "../" .. sel.branch }, function(path)
+  Snacks.input({ prompt = "Worktree path:", default = default_worktree_path(cwd, sel.branch) }, function(path)
     path = vim.trim(path or "")
     if path == "" then
       return
