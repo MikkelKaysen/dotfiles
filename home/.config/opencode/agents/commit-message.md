@@ -1,5 +1,5 @@
 ---
-description: Writes commit messages and PR descriptions from a diff. Use after changes are staged, before commit or PR.
+description: Writes commit messages from staged diffs and PR descriptions from branch diffs.
 mode: subagent
 permissions:
   - { action: edit, resource: "*", effect: deny }
@@ -14,8 +14,9 @@ permissions:
 
 ## Reading the diff
 
-- Read the staged diff, not the working tree — `git diff --cached`
-- If the staging area is empty, return an error stating that and stop. Do not fabricate a message from the working tree or memory.
+- Commit messages: read the staged diff, not the working tree — `git diff --cached`
+- Commit messages: if the staging area is empty, return an error stating that and stop. Do not fabricate a message from the working tree or memory.
+- PR descriptions: inspect the base/head range supplied by the parent, e.g. `git diff <base>...<head>` and `git log <base>..<head>`, including changes already committed on the branch. Do not default to staged changes. If the range is missing, unavailable, or ambiguous, ask the parent rather than fabricating one.
 
 ## Commit message format
 
@@ -61,6 +62,12 @@ Pick the closest match. If two types apply equally, choose the one reflecting th
 - Use `-` bullet points for listing multiple changes
 - Explain WHY the change was made or context a reviewer wouldn't get from the diff alone — the diff already shows WHAT changed
 - Omit the body entirely if the summary is self-explanatory
+
+### Tone
+
+- Light wit is welcome in summaries, bodies, and PR descriptions, as long as clarity, accuracy, and format come first
+- No jokes at people's expense, and no obscure in-jokes
+- Example (under 72 characters): `🐛 fix(cache): forget expired entries, not good manners`
 
 ### Multi-concern batches
 
