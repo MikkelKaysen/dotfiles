@@ -662,6 +662,403 @@ local function default_worktree_path(cwd, branch)
   return ok and result or fallback
 end
 
+-- ---------------------------------------------------------------------------
+-- worktree creation safety + git worktree add (replaces the plugin's create,
+-- which hides Git errors and interpolates the cd command unescaped)
+-- ---------------------------------------------------------------------------
+
+local uv = vim.uv or vim.loop
+local Hooks = nil -- git-worktree.hooks, required lazily when a flow runs
+
+-- Direct children of a bare common dir that Git itself uses; never a worktree.
+local RESERVED = {}
+for _, n in ipairs({
+  "objects", "refs", "worktrees", "hooks", "info", "logs", "branches", "modules", "lfs",
+  "rr-cache", "config", "config.worktree", "HEAD", "packed-refs", "shallow", "commondir",
+  "description", "index", "FETCH_HEAD", "ORIG_HEAD",
+}) do
+  RESERVED[n] = true
+end
+local MAX_SCAN = 50000
+
+-- Lexical collapse of "." and ".." segments (only used after walk_raw).
+local function collapse(p)
+  local out = {}
+  for seg in p:gmatch("[^/]+") do
+    if seg == ".." then
+      out[#out] = nil
+    elseif seg ~= "." then
+      out[#out + 1] = seg
+    end
+  end
+  return "/" .. table.concat(out, "/")
+end
+
+-- lstat: stat, or nil when ENOENT. Raises on any other access error (fail closed).
+local function lstat_strict(p)
+  local st, err, name = uv.fs_lstat(p)
+  if st then
+    return st
+  end
+  if name == "ENOENT" then
+    return nil
+  end
+  error(("cannot inspect %s: %s"):format(p, tostring(err)), 0)
+end
+
+-- Walk the raw absolute path component by component BEFORE any ".." collapse,
+-- refusing any symlink (leaf, ancestor or dangling). Returns the leaf stat or nil
+-- when missing. A ".." after a missing component is refused (cannot be resolved safely).
+local function walk_raw(abs)
+  local cur, leaf = "", nil
+  local segs = vim.split(abs, "/", { plain = true, trimempty = true })
+  for i, seg in ipairs(segs) do
+    cur = cur .. "/" .. seg
+    local st = lstat_strict(cur)
+    if not st then
+      if abs:find("/%.%./") or abs:find("/%.%.$") then
+        error("cannot resolve '..' below a missing directory: " .. abs, 0)
+      end
+      return nil
+    end
+    if st.type == "link" then
+      error("refusing: symlink in path at " .. cur, 0)
+    end
+    if i == #segs then
+      leaf = st
+    end
+  end
+  return leaf
+end
+
+-- Entries of a directory (raises on error). Names and types only; never follows links.
+local function dir_entries(p)
+  local req, err = uv.fs_scandir(p)
+  if not req then
+    error(("cannot read %s: %s"):format(p, tostring(err)), 0)
+  end
+  local out = {}
+  for name, typ in function()
+    return uv.fs_scandir_next(req)
+  end do
+    out[#out + 1] = { name = name, type = typ }
+  end
+  return out
+end
+
+-- Refuse a plain directory that holds Git metadata (.git entries or bare repos).
+-- Symlinks are not followed: they are removed as links, never traversed.
+local function scan_foreign(dir, budget)
+  local ents = dir_entries(dir)
+  budget.n = budget.n + #ents
+  if budget.n > MAX_SCAN then
+    error("too many entries to verify safely under " .. dir, 0)
+  end
+  local names = {}
+  for _, e in ipairs(ents) do
+    names[e.name] = true
+  end
+  if names[".git"] then
+    error("contains a nested repository (.git): " .. dir, 0)
+  end
+  if names.HEAD and names.objects and names.refs then
+    error("contains a bare repository: " .. dir, 0)
+  end
+  for _, e in ipairs(ents) do
+    local typ = e.type
+    if typ == nil then
+      local st = lstat_strict(dir .. "/" .. e.name)
+      typ = st and st.type
+    end
+    if typ == "directory" then
+      scan_foreign(dir .. "/" .. e.name, budget)
+    end
+  end
+end
+
+-- Full registrations from `git worktree list` (bare and stale entries included).
+---@return table[]?, string?
+local function registrations(cwd)
+  local lines, err = git_lines(cwd, { "worktree", "list", "--porcelain" })
+  if not lines then
+    return nil, (err ~= nil and err ~= "") and err or "git worktree list failed"
+  end
+  local regs, cur = {}, nil
+  for _, line in ipairs(lines) do
+    if vim.startswith(line, "worktree ") then
+      cur = { path = line:sub(#"worktree " + 1), bare = false, prunable = false }
+      regs[#regs + 1] = cur
+    elseif cur and line == "bare" then
+      cur.bare = true
+    elseif cur and vim.startswith(line, "branch ") then
+      cur.branch = (line:sub(#"branch " + 1):gsub("^refs/heads/", ""))
+    elseif cur and vim.startswith(line, "prunable") then
+      cur.prunable = true
+    end
+  end
+  return regs
+end
+
+-- Layout A: <root>/.git is a gitdir file pointing at the bare common dir.
+local function is_layout_a(root, common)
+  local st = uv.fs_stat(root .. "/.git")
+  if not st or st.type ~= "file" then
+    return false
+  end
+  local ok, lines = pcall(vim.fn.readfile, root .. "/.git", "", 1)
+  local target = ok and type(lines[1]) == "string" and lines[1]:match("^gitdir:%s*(.-)%s*$") or nil
+  if not target or target == "" then
+    return false
+  end
+  if not vim.startswith(target, "/") then
+    target = root .. "/" .. target
+  end
+  return norm(target) == common
+end
+
+-- Classify the create target. Raises a readable error for every refusal.
+-- Returns { kind = "missing"|"empty"|"plain"|"registered", stale, canon, leaf }.
+local function classify(abs, cwd)
+  local leaf = walk_raw(abs)
+  local canon = collapse(abs)
+  if canon == "/" then
+    error("refusing to use the filesystem root", 0)
+  end
+  if canon:find("/.git/", 1, true) or canon:match("/%.git$") then
+    error("path contains a .git component", 0)
+  end
+
+  local regs, rerr = registrations(cwd)
+  if not regs then
+    error("cannot list worktrees: " .. tostring(rerr), 0)
+  end
+  local common = git_out(cwd, { "rev-parse", "--path-format=absolute", "--git-common-dir" })
+  local absgit = git_out(cwd, { "rev-parse", "--path-format=absolute", "--absolute-git-dir" })
+  local bare = common and git_out(cwd, { "--git-dir", common, "config", "--bool", "core.bare" })
+  if not common or common == "" or not absgit or absgit == "" or not bare then
+    error("cannot query git metadata", 0)
+  end
+  common, absgit = norm(common), norm(absgit)
+  local is_bare = bare == "true"
+  local home = vim.env.HOME
+  if not home or home == "" then
+    error("HOME is unset", 0)
+  end
+  home = norm(home)
+
+  -- Repo area: the only place existing non-empty directories may be replaced.
+  local area
+  if is_bare then
+    local root = vim.fs.dirname(common)
+    area = is_layout_a(root, common) and root or common
+  else
+    area = vim.fs.dirname(vim.fs.dirname(common))
+  end
+  area = norm(area)
+
+  -- Never contain home (covers '/'), the current cwd, or any Git metadata path.
+  for _, x in ipairs({ home, cwd, common, absgit }) do
+    if contains_path(canon, x) then
+      error("target contains protected path " .. x, 0)
+    end
+  end
+
+  local exact
+  for _, r in ipairs(regs) do
+    if norm(r.path) == canon then
+      exact = r
+    elseif not r.bare then
+      if contains_path(canon, r.path) then
+        error("target contains registered worktree " .. r.path, 0)
+      end
+      if contains_path(r.path, canon) then
+        error("target is inside registered worktree " .. r.path, 0)
+      end
+    end
+  end
+
+  -- Git metadata: inside a non-bare .git is never allowed; inside a bare common
+  -- dir only non-reserved children (e.g. feature/foo) are allowed.
+  if canon ~= common and contains_path(common, canon) then
+    if not is_bare then
+      error("target is inside the git directory", 0)
+    end
+    local first = canon:sub(#common + 2):match("^[^/]+")
+    if RESERVED[first] then
+      error("target uses reserved git directory name " .. first, 0)
+    end
+  end
+
+  if exact then
+    if exact.bare then
+      error("target is a bare repository", 0)
+    end
+    return { kind = "registered", stale = leaf == nil or exact.prunable, canon = canon, leaf = leaf }
+  end
+  if leaf == nil then
+    return { kind = "missing", canon = canon }
+  end
+  if leaf.type ~= "directory" then
+    error("target exists and is not a directory", 0)
+  end
+  if #dir_entries(canon) == 0 then
+    return { kind = "empty", canon = canon, leaf = leaf }
+  end
+  if norm(vim.fs.dirname(canon)) ~= area then
+    error("existing non-empty directory is outside the repo area " .. area, 0)
+  end
+  if area == home then
+    error("refusing to replace a directory inside the home directory", 0)
+  end
+  scan_foreign(canon, { n = 0 })
+  return { kind = "plain", canon = canon, leaf = leaf }
+end
+
+-- Everything the safety decision depends on; compared again after confirmation.
+local function snapshot(abs, cwd, branch)
+  if cwd_changed(cwd) then
+    error("working directory changed", 0)
+  end
+  local leaf = walk_raw(abs)
+  local regs, rerr = registrations(cwd)
+  if not regs then
+    error("cannot list worktrees: " .. tostring(rerr), 0)
+  end
+  local keys = {}
+  for _, r in ipairs(regs) do
+    keys[#keys + 1] = table.concat({ r.path, r.branch or "", tostring(r.bare), tostring(r.prunable) }, "\t")
+  end
+  table.sort(keys)
+  return {
+    cwd = norm(vim.fn.getcwd()),
+    leaf = leaf and { dev = leaf.dev, ino = leaf.ino, type = leaf.type } or false,
+    regs = table.concat(keys, "\n"),
+    branch = git_out(cwd, { "rev-parse", "--verify", "--quiet", "refs/heads/" .. branch }) or false,
+  }
+end
+
+-- Switch like the plugin: escaped cd, clearjumps, SWITCH hooks.
+local function switch_to(path)
+  Hooks = Hooks or require("git-worktree.hooks")
+  local prev = vim.fn.getcwd()
+  local Config = require("git-worktree.config")
+  vim.cmd({ cmd = Config.change_directory_command, args = { path } })
+  if Config.clearjumps_on_change then
+    vim.cmd("clearjumps")
+  end
+  Hooks.emit(Hooks.type.SWITCH, path, prev)
+  vim.notify("Switched to " .. path, vim.log.levels.INFO)
+end
+
+-- Only one creation flow may run at a time. Released on success, cancel or error.
+local creating = false
+
+-- Create a worktree for `sel` at `input` (relative to cwd or absolute).
+-- Callback-driven (no coroutine), so the deletion flow's busy guard is untouched.
+---@param cwd string
+---@param sel { branch: string, upstream: string? }
+---@param input string
+local function create_flow(cwd, sel, input)
+  if creating then
+    return vim.notify("A worktree creation is already in progress", vim.log.levels.WARN)
+  end
+  creating = true
+  local function fail(msg)
+    creating = false
+    vim.notify(msg, vim.log.levels.ERROR)
+  end
+  local function guard(fn)
+    return function(...)
+      local ok, err = pcall(fn, ...)
+      if not ok then
+        fail("Worktree creation aborted: " .. tostring(err))
+      end
+    end
+  end
+
+  -- Final step: fresh local-presence decision, then git worktree add (no yields).
+  local function add(cls)
+    local branch = sel.branch
+    local argv
+    if git_out(cwd, { "rev-parse", "--verify", "--quiet", "refs/heads/" .. branch }) then
+      argv = { "worktree", "add", cls.canon, branch }
+    elseif sel.upstream then
+      argv = { "worktree", "add", "-b", branch, "--track", cls.canon, sel.upstream }
+    else
+      argv = { "worktree", "add", "-b", branch, cls.canon }
+    end
+    local ok, err = git(cwd, argv)
+    if not ok then
+      return fail(("git worktree add failed for %s:\n%s"):format(cls.canon, err))
+    end
+    creating = false
+    Hooks = Hooks or require("git-worktree.hooks")
+    Hooks.emit(Hooks.type.CREATE, cls.canon, branch, sel.upstream)
+    switch_to(cls.canon)
+  end
+
+  -- Clear the target (only for plain/registered, after confirmation), then add.
+  local function clear_and_add(cls)
+    if cls.kind == "plain" then
+      if vim.fn.delete(cls.canon, "rf") ~= 0 then
+        return fail("could not delete existing directory " .. cls.canon)
+      end
+      if lstat_strict(cls.canon) then
+        return fail("directory still present after deletion; not creating " .. cls.canon)
+      end
+    elseif cls.kind == "registered" then
+      local ok, err = git(cwd, { "worktree", "remove", "--force", cls.canon })
+      if not ok then
+        return fail(("git worktree remove --force failed for %s (branch kept):\n%s"):format(cls.canon, err))
+      end
+    end
+    add(cls)
+  end
+
+  local ok, cls, snap = pcall(function()
+    local abs = input:sub(1, 1) == "/" and input or (cwd .. "/" .. input)
+    local c = classify(abs, cwd)
+    local all = worktrees()
+    if not all then
+      error("cannot list worktrees", 0)
+    end
+    for _, wt in ipairs(all) do
+      if wt.branch == sel.branch then
+        error(("Branch '%s' is already checked out in %s"):format(sel.branch, wt.path), 0)
+      end
+    end
+    return c, snapshot(c.canon, cwd, sel.branch)
+  end)
+  if not ok then
+    return fail("Worktree creation refused: " .. tostring(cls))
+  end
+
+  local prompt
+  if cls.kind == "plain" then
+    prompt = ("Delete ALL contents of %s, including uncommitted and untracked files, then create the worktree?")
+      :format(cls.canon)
+  elseif cls.kind == "registered" and not cls.stale then
+    prompt = ("Force-remove the registered worktree %s (uncommitted changes are lost; its branch is kept)?")
+      :format(cls.canon)
+  end
+  if not prompt then
+    return guard(clear_and_add)(cls)
+  end
+
+  vim.ui.select({ "No", "Yes" }, { prompt = prompt }, guard(function(choice)
+    if choice ~= "Yes" then
+      creating = false
+      return vim.notify("Worktree creation cancelled; nothing changed", vim.log.levels.INFO)
+    end
+    -- Reclassify and compare everything the decision depended on before deleting.
+    local again = classify(cls.canon, cwd)
+    if again.kind ~= cls.kind or not vim.deep_equal(snapshot(cls.canon, cwd, sel.branch), snap) then
+      error("target or Git state changed during confirmation; nothing removed", 0)
+    end
+    clear_and_add(again)
+  end))
+end
+
 -- Ask for the worktree path (default from default_worktree_path), then create it.
 ---@param st table
 ---@param sel { branch: string, upstream: string? }
@@ -685,7 +1082,7 @@ local function prompt_path_and_create(st, sel, cwd)
     if problem then
       return vim.notify(("Worktree path '%s' %s"):format(path, problem), vim.log.levels.ERROR)
     end
-    require("git-worktree").create_worktree(path, sel.branch, sel.upstream)
+    create_flow(cwd, sel, path)
   end)
 end
 
