@@ -2,8 +2,8 @@
 -- LSP core: diagnostics config, inlay hints, folds, shared capabilities and
 -- the LSP keymaps (ported from LazyVim's plugins/lsp/init.lua).
 --
--- Keymaps: Neovim 0.12 already provides native LSP defaults (applied on
--- LspAttach): grn (rename), gra (code action, n/x), grr (references),
+-- Keymaps: Neovim 0.12 provides native LSP defaults:
+-- grn (rename), gra (code action, n/x), grr (references),
 -- gri (implementation), grt (type definition), grx (codelens), gO (document
 -- symbols), and insert-mode <C-s> (signature help). They are NOT redefined
 -- here. The `lsp.set` block below only adds custom, capability-filtered maps
