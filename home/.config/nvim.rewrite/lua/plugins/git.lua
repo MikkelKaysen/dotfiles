@@ -573,18 +573,21 @@ local function resolve_typed(st, cwd, name)
   local matches = {}
   for _, r in ipairs(st.remote_entries) do
     if r.name == name then
-      matches[#matches + 1] = r.short
+      matches[#matches + 1] = r
     end
   end
   if #matches > 1 then
+    local names = vim.tbl_map(function(r)
+      return r.short
+    end, matches)
     vim.notify(
-      ("'%s' exists on several remotes; select it from the list:\n%s"):format(name, table.concat(matches, "\n")),
+      ("'%s' exists on several remotes; select it from the list:\n%s"):format(name, table.concat(names, "\n")),
       vim.log.levels.WARN
     )
     return nil
   end
   if #matches == 1 then
-    return resolve_entry(st, st.remote_entries[1].name == name and st.remote_shorts[matches[1]] or nil)
+    return resolve_entry(st, matches[1])
   end
   return { branch = name, upstream = nil }
 end
