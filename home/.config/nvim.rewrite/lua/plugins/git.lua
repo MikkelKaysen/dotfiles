@@ -712,7 +712,9 @@ end
 
 -- Walk the raw absolute path component by component BEFORE any ".." collapse,
 -- refusing any symlink (leaf, ancestor or dangling). Returns the leaf stat or nil
--- when missing. A ".." after a missing component is refused (cannot be resolved safely).
+-- when missing. Only a ".." AFTER the first missing component is refused: it is
+-- ambiguous (missing/.. cannot be resolved without the filesystem). Already-walked
+-- ".." segments (e.g. cwd/../new) are real directories and stay allowed.
 local function walk_raw(abs)
   local cur, leaf = "", nil
   local segs = vim.split(abs, "/", { plain = true, trimempty = true })
@@ -720,8 +722,10 @@ local function walk_raw(abs)
     cur = cur .. "/" .. seg
     local st = lstat_strict(cur)
     if not st then
-      if abs:find("/%.%./") or abs:find("/%.%.$") then
-        error("cannot resolve '..' below a missing directory: " .. abs, 0)
+      for j = i + 1, #segs do
+        if segs[j] == ".." then
+          error("cannot resolve '..' below a missing directory: " .. abs, 0)
+        end
       end
       return nil
     end
@@ -990,7 +994,7 @@ local function switch_to(path)
   Hooks = Hooks or require("git-worktree.hooks")
   local prev = vim.fn.getcwd()
   local Config = require("git-worktree.config")
-  -- nvim_cmd does not escape args (verified: '#' and '%' are expanded), so escape here.
+  -- nvim_cmd passes args through unescaped; the path is fnameescape'd in the args below.
   vim.cmd({ cmd = Config.change_directory_command, args = { vim.fn.fnameescape(path) } })
   if Config.clearjumps_on_change then
     vim.cmd("clearjumps")
@@ -1100,7 +1104,8 @@ local function create_flow(cwd, sel, input)
     return guard(clear_and_add)(cls)
   end
 
-  vim.ui.select({ "No", "Yes" }, { prompt = prompt }, guard(function(choice)
+  -- Guard the call itself: a throwing vim.ui.select must release the creating flag.
+  local selected, serr = pcall(vim.ui.select, { "No", "Yes" }, { prompt = prompt }, guard(function(choice)
     if choice ~= "Yes" then
       creating = false
       return vim.notify("Worktree creation cancelled; nothing changed", vim.log.levels.INFO)
