@@ -671,7 +671,10 @@ local function fetch_remotes(picker, cwd)
         return vim.notify("git fetch --all --prune failed:\n" .. msg, vim.log.levels.ERROR)
       end
       if picker and not picker.closed then
-        pcall(picker.find, picker, { refresh = true })
+        local rok, rerr = pcall(picker.find, picker, { refresh = true })
+        if not rok then
+          vim.notify("Could not refresh the branch list: " .. tostring(rerr), vim.log.levels.ERROR)
+        end
       end
       vim.notify("Fetched all remotes", vim.log.levels.INFO)
     end)
@@ -686,8 +689,8 @@ end
 -- worktree for it. Creation uses the plugin's create_worktree.
 function M.worktree_create()
   local cwd = vim.fn.getcwd()
-  local st, err = scan_branches(cwd)
-  if not st then
+  local probe, err = scan_branches(cwd) -- validates the repo before opening
+  if not probe then
     return vim.notify("Could not list git branches (are you in a git repository?): " .. (err or ""), vim.log.levels.ERROR)
   end
 
@@ -748,12 +751,22 @@ function M.worktree_create()
       end
       local sel
       if item then
-        sel = resolve_entry(fresh, item)
+        -- Re-resolve against the fresh scan so a vanished ref is never recreated.
+        local ref
+        if item.kind == "local" then
+          ref = fresh.locals[item.name]
+        else
+          ref = fresh.remote_shorts[item.short]
+        end
+        if not ref then
+          return vim.notify(("'%s' no longer exists; reopen <leader>gW"):format(item.short or item.name), vim.log.levels.ERROR)
+        end
+        sel = resolve_entry(fresh, ref)
       elseif typed ~= "" then
         sel = resolve_typed(fresh, cwd, typed)
       end
       if sel then
-        prompt_path_and_create(fresh, sel)
+        prompt_path_and_create(fresh, sel, cwd)
       end
     end,
   })
