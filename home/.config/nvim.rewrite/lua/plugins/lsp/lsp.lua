@@ -67,28 +67,19 @@ vim.lsp.config("*", {
   },
 })
 
--- LSP keymaps (capability-filtered via util.lsp.set)
+-- Custom LSP keymaps (capability-filtered via util.lsp.set)
 lsp.set({}, {
-  -- Navigation (picker-based where a list of results can occur)
-  { "gd", function() Snacks.picker.lsp_definitions() end, desc = "Goto Definition", has = "definition" },
-  { "gr", function() Snacks.picker.lsp_references() end, nowait = true, desc = "References" },
-  { "gI", function() Snacks.picker.lsp_implementations() end, desc = "Goto Implementation" },
-  { "gy", function() Snacks.picker.lsp_type_definitions() end, desc = "Goto T[y]pe Definition" },
+  -- Navigation
+  { "gd", vim.lsp.buf.definition, desc = "Goto Definition", has = "definition" },
   { "gD", vim.lsp.buf.declaration, desc = "Goto Declaration" },
   -- Info
-  { "K", function() return vim.lsp.buf.hover() end, desc = "Hover" },
   { "gK", function() return vim.lsp.buf.signature_help() end, desc = "Signature Help", has = "signatureHelp" },
-  { "<c-k>", function() return vim.lsp.buf.signature_help() end, mode = "i", desc = "Signature Help", has = "signatureHelp" },
-  -- Rename / Refactor
-  { "<leader>ca", vim.lsp.buf.code_action, desc = "Code Action", mode = { "n", "x" }, has = "codeAction" },
-  { "<leader>cc", vim.lsp.codelens.run, desc = "Run Codelens", mode = { "n", "x" }, has = "codeLens" },
+  -- Refactor / Code actions
   { "<leader>cC", vim.lsp.codelens.refresh, desc = "Refresh & Display Codelens", mode = "n", has = "codeLens" },
   { "<leader>cR", function() Snacks.rename.rename_file() end, desc = "Rename File", has = { "workspace/didRenameFiles", "workspace/willRenameFiles" } },
-  { "<leader>cr", vim.lsp.buf.rename, desc = "Rename", has = "rename" },
   { "<leader>cA", lsp.action.source, desc = "Source Action", has = "codeAction" },
   { "<leader>co", lsp.action["source.organizeImports"], desc = "Organize Imports", has = "codeAction" },
   -- Symbols / Calls
-  { "<leader>ss", function() Snacks.picker.lsp_symbols({ filter = require("util.icons").kind_filter }) end, desc = "LSP Symbols", has = "documentSymbol" },
   { "<leader>sS", function() Snacks.picker.lsp_workspace_symbols({ filter = require("util.icons").kind_filter }) end, desc = "LSP Workspace Symbols", has = "workspace/symbols" },
   { "gai", function() Snacks.picker.lsp_incoming_calls() end, desc = "C[a]lls Incoming", has = "callHierarchy/incomingCalls" },
   { "gao", function() Snacks.picker.lsp_outgoing_calls() end, desc = "C[a]lls Outgoing", has = "callHierarchy/outgoingCalls" },
