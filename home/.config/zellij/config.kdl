@@ -162,6 +162,13 @@ keybinds clear-defaults=true {
         }
     }
     shared_among "normal" {
+        bind "?" {
+            LaunchOrFocusPlugin "forgot" {
+                floating true
+                move_to_focused_tab true
+            }
+            SwitchToMode "locked"
+        }
         bind "Alt left" { MoveFocusOrTab "left"; }
         bind "Alt down" { MoveFocus "down"; }
         bind "Alt up" { MoveFocus "up"; }
@@ -252,6 +259,9 @@ plugins {
   configuration location="zellij:configuration"
   filepicker location="zellij:strider" {
     cwd "/"
+  }
+  forgot location="https://github.com/karimould/zellij-forgot/releases/download/0.4.2/zellij_forgot.wasm" {
+    LOAD_ZELLIJ_BINDINGS "true"
   }
   plugin-manager location="zellij:plugin-manager"
   session-manager location="zellij:session-manager"
@@ -378,8 +388,8 @@ plugins {
     format_center "{pipe_zjhints} {notifications}"
     format_right  "#[bg=$surface0,fg=$flamingo]#[fg=$crust,bg=$flamingo] #[bg=$surface1,fg=$flamingo,bold] {command_user}@{command_host}#[bg=$surface0,fg=$surface1]#[bg=$surface0,fg=$maroon]#[bg=$maroon,fg=$crust]󰃭 #[bg=$surface1,fg=$maroon,bold] {datetime}#[bg=$surface0,fg=$surface1]"
     format_space  "#[bg=$surface0]"
-    format_hide_on_overlength "true"
-    format_precedence "lrc"
+    format_hide_on_overlength "false"
+    format_precedence "lcr"
 
     pipe_zjhints_format "{output}"
 
@@ -447,7 +457,7 @@ plugins {
     // Fit the hints to the terminal, dropping trailing hints as it
     // narrows. Reserve columns for whatever shares the bar.
     auto_width true // default
-    reserve_columns 100
+    reserve_columns 140
     // Set to 2 if your terminal draws Nerd Font glyphs double-width.
     ambiguous_width 1 // default
     // Appended when a single hint is too wide to fit even alone
