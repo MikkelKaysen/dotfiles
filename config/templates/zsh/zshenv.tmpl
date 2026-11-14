@@ -13,6 +13,8 @@ skip_global_compinit=1
 typeset -U path
 path+=("${HOME}/.local/bin")
 
+eval "$(mise activate zsh --shims)"
+
 : ${EDITOR="nvim"}
 : ${VISUAL="nvim"}
 : ${ITM_LLM_GW_URL="https://llm-gw.itmindsinternal.dk/v1"}
