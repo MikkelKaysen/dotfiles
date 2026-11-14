@@ -1,0 +1,76 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "quick-message",
+  "plugins": [
+    "opencode-models-discovery",
+    "github:MikkelKaysen/opencode-bare-layout",
+    {
+      "package": "@devtheops/opencode-plugin-otel",
+      "options": {
+        "enabled": true,
+        "endpoint": "http://localhost:4318",
+        "protocol": "http/protobuf",
+      },
+    },
+  ],
+  "mcp": {
+    "servers": {
+      "filesystem": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "@modelcontextprotocol/server-filesystem"
+        ],
+      },
+      "git": {
+        "type": "local",
+        "command": [
+          "uvx",
+          "mcp-server-git"
+        ],
+      },
+      "fetch": {
+        "type": "local",
+        "command": [
+          "uvx",
+          "mcp-server-fetch"
+        ],
+      },
+    },
+  },
+  "providers": {
+    "localai": {
+      "package": "@ai-sdk/openai-compatible",
+      "name": "LocalAI (local)",
+      "settings": {
+        "baseURL": "http://localhost:8080/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+        },
+      },
+    },
+  },
+  "policies": [
+    {
+      "action": "provider.use",
+      "resource": "opencode",
+      "effect": "deny"
+    },
+    {
+      "action": "provider.use",
+      "resource": "ollama",
+      "effect": "deny"
+    },
+  ],
+  "experimental": {
+    "todo": true,
+  },
+  "agents": {
+    "plan": {
+      "permissions": [
+        { "action": "subagent", "resource": "commit-message", "effect": "allow" },
+      ],
+    },
+  },
+}

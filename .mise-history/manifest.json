@@ -179,5 +179,10 @@
     "age182reh6v4aq9kjt26tl94dh69p5s6jy5pefukzsgs405tfxrz5e4s8pu25w",
     "age1f7r4zyrd0vxctyvhvmssnyh85095zv0qcu3lg9utlwgqmfrjhy4q5nrjyz"
   ],
-  "permissions": {}
+  "permissions": {
+    "home/.config": 448,
+    "home/.config/opencode/cli.json": 384,
+    "home/.config/zsh/personal/init.zsh.zwc": 292,
+    "home/.config/zsh/personal/nvim.functions.zsh.zwc": 292
+  }
 }
