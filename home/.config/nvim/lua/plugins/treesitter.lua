@@ -50,14 +50,17 @@ vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
   end,
 })
 
--- install missing parsers
+-- install missing parsers (deferred: the tree-sitter CLI may need a mason
+-- download, and a failure there must not abort init.lua)
 local install = vim.tbl_filter(function(lang)
   return not require("util.treesitter").have(lang)
 end, opts.ensure_installed)
 if #install > 0 then
-  require("util.treesitter").build(function()
-    TS.install(install, { summary = true }):await(function()
-      require("util.treesitter").get_installed(true) -- refresh the installed langs
+  vim.schedule(function()
+    require("util.treesitter").build(function()
+      TS.install(install, { summary = true }):await(function()
+        require("util.treesitter").get_installed(true) -- refresh the installed langs
+      end)
     end)
   end)
 end

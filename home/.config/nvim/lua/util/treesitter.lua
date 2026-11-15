@@ -116,29 +116,42 @@ function M.ensure_treesitter_cli(cb)
     return cb(false, "`mason.nvim` is disabled in your config, so we cannot install it automatically.")
   end
 
+  local ok_registry, mr = pcall(require, "mason-registry")
+  if not ok_registry then
+    return cb(false, "`mason-registry` is unavailable, so we cannot install `tree-sitter-cli` automatically.")
+  end
+
   -- check again since we might have installed it already
   if vim.fn.executable("tree-sitter") == 1 then
     return cb(true)
   end
 
-  local mr = require("mason-registry")
-  mr.refresh(function()
-    local p = mr.get_package("tree-sitter-cli")
-    if not p:is_installed() then
-      vim.notify("Installing `tree-sitter-cli` with `mason.nvim`...", vim.log.levels.INFO)
-      p:install(
-        nil,
-        vim.schedule_wrap(function(success)
-          if success then
-            vim.notify("Installed `tree-sitter-cli` with `mason.nvim`.", vim.log.levels.INFO)
-            cb(true)
-          else
-            cb(false, "Failed to install `tree-sitter-cli` with `mason.nvim`.")
-          end
-        end)
-      )
+  -- `mason.setup()` must have run before this, otherwise the registry has no
+  -- sources and `get_package` throws instead of returning nil.
+  local ok_refresh = pcall(mr.refresh, function()
+    if not mr.has_package("tree-sitter-cli") then
+      return cb(false, "`tree-sitter-cli` is not in the mason registry (is `mason.setup()` done and the registry refreshed?).")
     end
+    local p = mr.get_package("tree-sitter-cli")
+    if p:is_installed() then
+      return cb(true)
+    end
+    vim.notify("Installing `tree-sitter-cli` with `mason.nvim`...", vim.log.levels.INFO)
+    p:install(
+      nil,
+      vim.schedule_wrap(function(success)
+        if success and vim.fn.executable("tree-sitter") == 1 then
+          vim.notify("Installed `tree-sitter-cli` with `mason.nvim`.", vim.log.levels.INFO)
+          cb(true)
+        else
+          cb(false, "Failed to install `tree-sitter-cli` with `mason.nvim`.")
+        end
+      end)
+    )
   end)
+  if not ok_refresh then
+    return cb(false, "Failed to refresh the `mason.nvim` registry.")
+  end
 end
 
 return M
