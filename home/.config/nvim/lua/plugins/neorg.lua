@@ -102,8 +102,6 @@ vim.api.nvim_create_autocmd({ "FileType", "BufEnter" }, {
   end,
 })
 
-return M
-
 require("which-key").add({ { "<leader>j", group = "neorg" } }, { notify = false })
 
 local function map(lhs, rhs, desc)
@@ -123,3 +121,5 @@ end, "Find notes (current workspace)")
 map("g", function()
   Snacks.picker.grep({ dirs = { WORKSPACES.personal, WORKSPACES.work } })
 end, "Grep notes (personal + work)")
+
+return M
