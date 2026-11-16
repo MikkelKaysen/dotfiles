@@ -34,6 +34,11 @@ require("neorg").setup({
   load = {
     ["core.defaults"] = {},
     ["core.concealer"] = {},
+    -- Neorg's default keybinds map a global gO (TOC) that shadows native LSP
+    -- document symbols. Disable them; notes keys are defined explicitly below.
+    ["core.keybinds"] = {
+      config = { default_keybinds = false },
+    },
     ["core.dirman"] = {
       config = {
         workspaces = WORKSPACES,
