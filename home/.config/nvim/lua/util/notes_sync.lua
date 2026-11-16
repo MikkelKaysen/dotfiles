@@ -450,13 +450,9 @@ local function build_steps()
     {
       -- Re-validate after async work; anything still changing defers the pull.
       name = "recheck",
-      fn = function(ctx, next)
-        if ctx.skipped then
-          return next(true)
-        end
+      fn = function(_, next)
         if buffers_modified() then
-          ctx.skipped = "notes changed during sync"
-          return next(true)
+          return next(false, DEFER)
         end
         git({ "status", "--porcelain=v1", "-z", "--untracked-files=all", "--no-renames" }, function(ok, out, err)
           if not ok then
@@ -471,7 +467,8 @@ local function build_steps()
             if why then
               return next(false, why)
             end
-            ctx.skipped = "notes changed during sync"
+            -- Valid note changes arrived mid-run: keep them local, pull next time.
+            return next(false, DEFER)
           end
           next(true)
         end)
@@ -479,10 +476,7 @@ local function build_steps()
     },
     {
       name = "pull",
-      fn = function(ctx, next)
-        if ctx.skipped then
-          return next(true)
-        end
+      fn = function(_, next)
         git({ "pull", "--rebase", "--no-autostash", "origin", "main" }, function(ok, _, err)
           if not ok then
             return next(false, err .. " (local commit kept; resolve with git status, rebase --continue or --abort, then :NotesSync)")
@@ -494,9 +488,6 @@ local function build_steps()
     {
       name = "push",
       fn = function(ctx, next)
-        if ctx.skipped then
-          return next(true)
-        end
         git({ "push", "origin", "HEAD:refs/heads/main" }, function(ok, _, err)
           if not ok then
             return next(false, err)
