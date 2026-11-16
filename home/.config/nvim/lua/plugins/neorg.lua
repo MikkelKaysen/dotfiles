@@ -81,23 +81,35 @@ vim.api.nvim_create_autocmd("FileType", {
 -- injected code blocks, which nvim-treesitter main does not provide. Delegate those
 -- lines to the current nvim-treesitter indent; keep Neorg's indent for norg lines.
 
--- Column of the enclosing ranged tag (e.g. the "@code" line) for a line inside injected
--- code. The raw nvim-treesitter indent is relative to column 0, so the tag column is
--- added for every injected line (upstream only does this for blank leading lines).
-local function enclosing_tag_column(buf, line, text)
+-- Upstream core.esupports.indent (injected branch) adds the enclosing tag column only while
+-- every content row above the line is blank (first content statement). Once real content
+-- exists, nvim-treesitter's indent already includes the anchor, so nothing is added.
+-- Returns the tag column for that initial-blank case, nil otherwise.
+local function initial_blank_tag_column(buf, line)
   local ok, node = pcall(vim.treesitter.get_node, {
     bufnr = buf,
-    pos = { line, #text },
+    pos = { line, 0 },
     ignore_injections = true,
   })
-  while ok and node do
-    if node:type() == "ranged_verbatim_tag" then
-      local _, col = node:start()
-      return col
-    end
+  while ok and node and node:type() ~= "ranged_verbatim_tag_content" do
     node = node:parent()
   end
-  return 0
+  if not (ok and node) then
+    return nil
+  end
+  local start = node:range()
+  for row = start, line - 1 do
+    local text = vim.api.nvim_buf_get_lines(buf, row, row + 1, false)[1] or ""
+    if not text:match("^%s*$") then
+      return nil
+    end
+  end
+  local tag = node:parent()
+  if not tag then
+    return nil
+  end
+  local _, col = tag:start()
+  return col
 end
 
 local M = {}
@@ -114,7 +126,11 @@ M.indentexpr = function()
       if type(raw) ~= "number" or raw < 0 then
         return raw -- -1 keeps Neovim's own indent
       end
-      return raw + enclosing_tag_column(buf, line, text)
+      local base = initial_blank_tag_column(buf, line)
+      if base then
+        return raw + base
+      end
+      return raw
     end
   end
   return require("neorg").modules.get_module("core.esupports.indent").indentexpr(buf, line)
