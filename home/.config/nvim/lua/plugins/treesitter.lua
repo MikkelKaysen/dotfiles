@@ -7,11 +7,13 @@ local TS = require("nvim-treesitter")
 
 -- Neorg grammars are not in the upstream main-branch registry. norg_meta is registered
 -- here (native install, pinned). The norg parser itself is built by util/norg_parser.lua
--- from a pinned commit: it is deliberately NOT in the parsers table, so nvim-treesitter
--- never tries to install or update it natively. Re-applied after TSUpdate, because a
--- parser update may rebuild that table.
+-- from a pinned commit. Its registry entry is query-only (tier 2, no install_info): the
+-- custom builder owns the binary, Neorg owns the queries, and nvim-treesitter never tries
+-- to compile or update it natively (so update/needs_update cannot log "parser not available").
+-- Re-applied after TSUpdate, because a parser update may rebuild that table.
 local function register_neorg_parsers()
   local parsers = require("nvim-treesitter.parsers")
+  parsers.norg = { tier = 2 } -- query-only: no install_info (custom builder owns norg.so)
   parsers.norg_meta = {
     install_info = {
       url = "https://github.com/nvim-neorg/tree-sitter-norg-meta",
