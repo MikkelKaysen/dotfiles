@@ -107,8 +107,8 @@ end
 -- Child validation: load the candidate path explicitly and parse a tiny norg document.
 local CHECK_SCRIPT = [[
 local path = os.getenv("NORG_PARSER_CHECK")
-local ok, err = pcall(vim.treesitter.language.add, "norg", { path = path })
-if not ok then io.stderr:write("load failed: " .. tostring(err)); os.exit(1) end
+local ok, res = pcall(vim.treesitter.language.add, "norg", { path = path })
+if not ok or res ~= true then io.stderr:write("load failed: " .. tostring(res)); os.exit(1) end
 local ok2, root = pcall(function()
   return vim.treesitter.get_string_parser("* Test\n", "norg"):parse()[1]:root()
 end)
