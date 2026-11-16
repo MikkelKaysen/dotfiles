@@ -445,12 +445,6 @@ plugins {
     datetime_format   "%Y-%m-%d 󰅐 %H:%M"
     datetime_timezone "Europe/Stockholm"
   }
-  zjframes location="https://github.com/dj95/zjstatus/releases/latest/download/zjframes.wasm" {
-    hide_frame_except_for_fullscreen true
-    hide_frame_except_for_scroll true
-    hide_frame_except_for_search true
-    hide_frame_for_single_pane true
-  }
   zjhints location="https://github.com/myah-mitchell/zjhints/releases/latest/download/zjhints.wasm" {
     // Hard cap on the width of the hint line, in columns
     max_length 0 // 0 = unlimited
