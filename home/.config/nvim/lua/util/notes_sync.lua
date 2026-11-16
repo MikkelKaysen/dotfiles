@@ -486,6 +486,15 @@ function M.run(kind)
   if kind == "manual" then
     st.paused = false
   end
+  -- Git-invoked or wrapped Neovim may inherit repo redirection variables; refuse
+  -- rather than operating an external index/worktree. SSH/user git config is untouched.
+  for _, var in ipairs({ "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR" }) do
+    if vim.env[var] and vim.env[var] ~= "" then
+      st.paused = true
+      notify(("refusing sync: %s is set in the environment. Unset it and run :NotesSync."):format(var), vim.log.levels.ERROR)
+      return
+    end
+  end
   if notes_buffer_modified() then
     if kind == "manual" then
       notify("save or discard unsaved notes buffers first (sync not started)", vim.log.levels.WARN)
