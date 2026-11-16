@@ -76,6 +76,36 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
+-- Neorg v9.6.4 indentexpr calls the legacy vim.fn["nvim_treesitter#indent"]() for
+-- injected code blocks, which nvim-treesitter main does not provide. Delegate those
+-- lines to the current nvim-treesitter indent; keep Neorg's indent for norg lines.
+local function notes_indentexpr()
+  local buf = vim.api.nvim_get_current_buf()
+  local line = vim.v.lnum - 1
+  local ok, parser = pcall(vim.treesitter.get_parser, buf, "norg")
+  if ok and parser then
+    local lang = parser:language_for_range({ line, 0, line, 0 })
+    if lang and lang:lang() ~= "norg" then
+      return require("nvim-treesitter").indentexpr()
+    end
+  end
+  return require("neorg").modules.get_module("core.esupports.indent").indentexpr(buf, line)
+end
+_G.__neorg_notes_indentexpr = notes_indentexpr -- name only; referenced via v:lua below
+
+local function set_notes_indent(buf)
+  vim.bo[buf].indentexpr = "v:lua.__neorg_notes_indentexpr()"
+end
+
+-- Registered after neorg setup, so this runs after Neorg's own BufEnter indentexpr.
+vim.api.nvim_create_autocmd({ "FileType", "BufEnter" }, {
+  group = vim.api.nvim_create_augroup("neorg_indent_wrapper", { clear = true }),
+  pattern = "*.norg",
+  callback = function(ev)
+    set_notes_indent(ev.buf)
+  end,
+})
+
 require("which-key").add({ { "<leader>j", group = "neorg" } }, { notify = false })
 
 local function map(lhs, rhs, desc)
