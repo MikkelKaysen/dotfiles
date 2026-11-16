@@ -33,7 +33,7 @@ typeset -g stdin_stdout_tty=0
 _btop_osc11_mode() {
   emulate -LR zsh
   local LC_ALL=C
-  local fd ch buf="" r g b w re_body
+  local fd ch buf="" r g b w re_body bel=$'\a' st=$'\e\\'
   local -F deadline t lum rv gv bv scale
   REPLY_MODE=""
 
@@ -58,7 +58,7 @@ _btop_osc11_mode() {
       read -r -s -k1 -t $t -u $fd ch || break
       buf+=$ch
       (( ${#buf} <= 128 )) || break
-      if [[ $buf == *$'\a' || $buf == *$'\e\\' ]]; then
+      if [[ $buf == *"$bel" || $buf == *"$st" ]]; then
         break
       fi
     done
@@ -67,10 +67,10 @@ _btop_osc11_mode() {
   }
 
   # Strip the terminator, then require the exact reply shape.
-  if [[ $buf == *$'\a' ]]; then
-    buf=${buf%$'\a'}
-  elif [[ $buf == *$'\e\\' ]]; then
-    buf=${buf%$'\e\\'}
+  if [[ $buf == *"$bel" ]]; then
+    buf=${buf%"$bel"}
+  elif [[ $buf == *"$st" ]]; then
+    buf=${buf%"$st"}
   else
     return 1
   fi
@@ -106,6 +106,8 @@ _btop_os_mode() {
   os=$(uname -s 2>/dev/null)
 
   if [[ $os == Darwin ]]; then
+    # Missing defaults binary: unknown, so the caller falls back to dark.
+    (( $+commands[defaults] )) || return 1
     # Key is absent in light mode.
     out=$(defaults read -g AppleInterfaceStyle 2>/dev/null)
     if [[ $out == Dark ]]; then REPLY_MODE=dark; else REPLY_MODE=light; fi
