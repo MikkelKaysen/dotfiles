@@ -5,6 +5,30 @@
 
 local TS = require("nvim-treesitter")
 
+-- Neorg grammars are not in the upstream main-branch registry. norg_meta is registered
+-- here (native install, pinned). The norg parser itself is built by util/norg_parser.lua
+-- from a pinned commit. Its registry entry is query-only (tier 2, no install_info): the
+-- custom builder owns the binary, Neorg owns the queries, and nvim-treesitter never tries
+-- to compile or update it natively (so update/needs_update cannot log "parser not available").
+-- Re-applied after TSUpdate, because a parser update may rebuild that table.
+local function register_neorg_parsers()
+  local parsers = require("nvim-treesitter.parsers")
+  parsers.norg = { tier = 2 } -- query-only: no install_info (custom builder owns norg.so)
+  parsers.norg_meta = {
+    install_info = {
+      url = "https://github.com/nvim-neorg/tree-sitter-norg-meta",
+      revision = "6f0510cc516a3af3396a682fbd6655486c2c9d2d", -- tag v0.1.0
+    },
+    tier = 2,
+  }
+end
+register_neorg_parsers()
+vim.api.nvim_create_autocmd("User", {
+  pattern = "TSUpdate",
+  group = vim.api.nvim_create_augroup("neorg_parser_registry", { clear = true }),
+  callback = register_neorg_parsers,
+})
+
 local opts = {
   indent = { enable = true },
   highlight = { enable = true },
@@ -24,6 +48,7 @@ local opts = {
     "luap",
     "markdown",
     "markdown_inline",
+    "norg_meta",
     "printf",
     "python",
     "query",
@@ -41,6 +66,8 @@ local opts = {
 
 TS.setup(opts)
 require("util.treesitter").get_installed(true)
+-- Custom norg parser: builds in the background only when missing or outdated.
+require("util.norg_parser").setup()
 
 -- Angular: use the angular parser for component templates
 vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {

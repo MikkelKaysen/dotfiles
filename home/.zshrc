@@ -21,3 +21,8 @@ source ${ZIM_HOME}/init.zsh
 # >>> mise:activate >>> managed by mise — do not edit between markers
 eval "$(mise activate zsh)"
 # <<< mise:activate <<<
+# btop: sync the Catppuccin theme before launch (errors hidden; btop args/status preserved).
+btop() {
+  zsh -f "${XDG_CONFIG_HOME:-$HOME/.config}/btop/theme-sync.sh" 2>/dev/null || true
+  command btop "$@"
+}

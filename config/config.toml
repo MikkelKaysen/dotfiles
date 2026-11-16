@@ -26,7 +26,7 @@ mode = "0755"
 
 [dotfiles]
 "~/.config/bat" = { mode = "track" }
-"~/.config/btop" = { mode = "track" }
+"~/.config/btop" = { mode = "track", exclude = ["themes/catppuccin.theme"] }
 "~/.config/fnox/config.toml" = { mode = "track", encrypt = true }
 "~/.config/git/default.config" = { source = "git/default.config", mode = "copy" }
 "~/.config/git/default/core" = { source = "git/default/core", mode = "copy" }
@@ -89,8 +89,8 @@ cargo-binstall = "latest"
 eza = "latest"
 uv = "latest"
 codegraph = "latest"
-"cargo:MikkelKaysen/agent-top" = { version = "branch:feature/opencode-v2", crate = "agent-top" }
 playwright = "1.64.1"
+"cargo:abtop" = "latest"
 
 [settings]
 minimum_release_age = "12h"
