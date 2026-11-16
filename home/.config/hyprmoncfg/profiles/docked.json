@@ -1,0 +1,96 @@
+{
+  "name": "docked",
+  "created_at": "2026-11-16T21:19:42.924027915Z",
+  "updated_at": "2026-11-16T21:19:42.924367742Z",
+  "outputs": [
+    {
+      "key": "apple computer inc|color lcd",
+      "match_key": "apple computer inc|color lcd",
+      "name": "eDP-1",
+      "description": "Apple Computer Inc Color LCD",
+      "make": "Apple Computer Inc",
+      "model": "Color LCD",
+      "enabled": true,
+      "mode": "2880x1800@60.00Hz",
+      "width": 2880,
+      "height": 1800,
+      "refresh": 60.001,
+      "x": 0,
+      "y": 0,
+      "scale": 1.2,
+      "transform": 0,
+      "bitdepth": 8,
+      "cm": "srgb",
+      "sdr_brightness": 1,
+      "sdr_saturation": 1,
+      "sdr_min_luminance": 0.2,
+      "sdr_max_luminance": 80,
+      "min_luminance": 0
+    },
+    {
+      "key": "dell inc.|dell p2416d|07c5368h2dpl",
+      "match_key": "dell inc.|dell p2416d|07c5368h2dpl",
+      "name": "DP-4",
+      "description": "Dell Inc. DELL P2416D 07C5368H2DPL",
+      "make": "Dell Inc.",
+      "model": "DELL P2416D",
+      "serial": "07C5368H2DPL",
+      "enabled": true,
+      "mode": "2560x1440@59.95Hz",
+      "width": 2560,
+      "height": 1440,
+      "refresh": 59.951,
+      "x": 2400,
+      "y": 30,
+      "scale": 1,
+      "transform": 0,
+      "bitdepth": 8,
+      "cm": "srgb",
+      "sdr_brightness": 1,
+      "sdr_saturation": 1,
+      "sdr_min_luminance": 0.2,
+      "sdr_max_luminance": 80,
+      "min_luminance": 0
+    }
+  ],
+  "workspaces": {
+    "enabled": true,
+    "strategy": "sequential",
+    "max_workspaces": 6,
+    "group_size": 3,
+    "monitor_order": [
+      "apple computer inc|color lcd",
+      "dell inc.|dell p2416d|07c5368h2dpl"
+    ],
+    "rules": [
+      {
+        "workspace": "1",
+        "output_key": "apple computer inc|color lcd",
+        "output_name": "eDP-1",
+        "default": true,
+        "persistent": true
+      },
+      {
+        "workspace": "2",
+        "output_key": "apple computer inc|color lcd",
+        "output_name": "eDP-1",
+        "default": true,
+        "persistent": true
+      },
+      {
+        "workspace": "3",
+        "output_key": "apple computer inc|color lcd",
+        "output_name": "eDP-1",
+        "default": true,
+        "persistent": true
+      },
+      {
+        "workspace": "name:gaming",
+        "output_key": "apple computer inc|color lcd",
+        "output_name": "eDP-1",
+        "default": true
+      }
+    ]
+  },
+  "exec": ""
+}
