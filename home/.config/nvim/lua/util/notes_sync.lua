@@ -395,11 +395,11 @@ local function build_steps()
       end,
     },
     {
-      -- Unsaved notes defer the whole run: no staging, commit, or pull.
+      -- Unsaved notes buffers defer the run before anything is staged or committed.
       name = "defer-check",
-      fn = function(ctx, next)
+      fn = function(_, next)
         if buffers_modified() then
-          ctx.skipped = "unsaved notes buffers, sync deferred"
+          return next(false, DEFER)
         end
         next(true)
       end,
@@ -407,7 +407,7 @@ local function build_steps()
     {
       name = "stage",
       fn = function(ctx, next)
-        if ctx.skipped or #ctx.paths == 0 then
+        if #ctx.paths == 0 then
           return next(true)
         end
         local args = { "--literal-pathspecs", "add", "--" }
@@ -435,7 +435,7 @@ local function build_steps()
     {
       name = "commit",
       fn = function(ctx, next)
-        if ctx.skipped or #ctx.paths == 0 then
+        if #ctx.paths == 0 then
           return next(true)
         end
         git({ "commit", "-m", COMMIT_MESSAGE }, function(ok, _, err)
