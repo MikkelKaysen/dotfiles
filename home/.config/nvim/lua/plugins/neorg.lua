@@ -86,11 +86,13 @@ vim.api.nvim_create_autocmd("FileType", {
 -- exists, nvim-treesitter's indent already includes the anchor, so nothing is added.
 -- Returns the tag column for that initial-blank case, nil otherwise.
 local function initial_blank_tag_column(buf, line)
-  local ok, node = pcall(vim.treesitter.get_node, {
-    bufnr = buf,
-    pos = { line, 0 },
-    ignore_injections = true,
-  })
+  local okm, tsint = pcall(function()
+    return require("neorg").modules.get_module("core.integrations.treesitter")
+  end)
+  if not (okm and tsint) then
+    return nil
+  end
+  local ok, node = pcall(tsint.get_first_node_on_line, buf, line)
   while ok and node and node:type() ~= "ranged_verbatim_tag_content" do
     node = node:parent()
   end
