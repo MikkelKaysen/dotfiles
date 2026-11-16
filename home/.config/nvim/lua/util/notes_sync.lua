@@ -415,7 +415,7 @@ local function build_steps()
           if not ok then
             return next(false, err)
           end
-          git({ "diff", "--cached", "--name-only", "-z" }, function(ok2, out)
+          git({ "diff", "--cached", "--name-only", "-z", "--no-renames" }, function(ok2, out)
             if not ok2 then
               return next(false, "could not read staged files")
             end
