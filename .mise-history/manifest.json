@@ -113,6 +113,18 @@
       "variants": []
     },
     {
+      "path": "home/.config/kanata/linux.kbd",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "home/.config/kanata/macos.kbd",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "home/.config/nvim",
       "autosave": true,
       "encrypt": false,
