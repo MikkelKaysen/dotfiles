@@ -42,3 +42,7 @@ if [ ! -e /dev/uinput ] || [ "$(stat -c '%G %a' /dev/uinput 2>/dev/null)" != "ui
   sudo udevadm trigger --subsystem-match=misc
 fi
 '''
+
+
+[dotfiles]
+"~/.config/uwsm" = { mode = "track" }
