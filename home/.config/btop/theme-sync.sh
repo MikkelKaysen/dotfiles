@@ -23,6 +23,11 @@ typeset -g script_dir=${0:A:h}
 typeset -g themes_dir=$script_dir/themes
 typeset -g link_name=catppuccin.theme
 
+# Capture the tty condition at entry, before any command substitution can
+# turn stdout into a pipe.
+typeset -g stdin_stdout_tty=0
+[[ -t 0 && -t 1 ]] && stdin_stdout_tty=1
+
 # ---- OSC 11 background query -------------------------------------------------
 
 # Sets REPLY_MODE to dark|light on success; returns non-zero otherwise.
@@ -32,8 +37,8 @@ _btop_osc11_mode() {
   local -a m
   REPLY_MODE=""
 
-  # Only query a real terminal that understands OSC 11.
-  [[ -t 0 && -t 1 ]] || return 1
+  # Only query a real terminal that understands OSC 11 (gate captured at entry).
+  (( stdin_stdout_tty )) || return 1
   case ${TERM:-} in
     dumb|linux|screen*|tmux*) return 1 ;;
   esac
@@ -133,25 +138,29 @@ _btop_os_mode() {
 
 # ---- main --------------------------------------------------------------------
 
+# Sets REPLY_FLAVOR to mocha|latte. No command substitution (keeps stdout a tty).
 _btop_pick_flavor() {
   emulate -LR zsh
   local arg=${(L)1} mode
+  REPLY_FLAVOR=mocha
   case $arg in
-    dark|true|1) print -r -- mocha; return 0 ;;
-    light|false|0) print -r -- latte; return 0 ;;
+    dark|true|1) REPLY_FLAVOR=mocha; return 0 ;;
+    light|false|0) REPLY_FLAVOR=latte; return 0 ;;
   esac
 
   if _btop_osc11_mode; then mode=$REPLY_MODE
   elif _btop_os_mode; then mode=$REPLY_MODE
   else mode=dark
   fi
-  if [[ $mode == light ]]; then print -r -- latte; else print -r -- mocha; fi
+  if [[ $mode == light ]]; then REPLY_FLAVOR=latte; else REPLY_FLAVOR=mocha; fi
+  return 0
 }
 
 _btop_main() {
   emulate -LR zsh
   local flavor target link tmp
-  flavor=$(_btop_pick_flavor "$1") || return 1
+  _btop_pick_flavor "$1"
+  flavor=$REPLY_FLAVOR
   target=catppuccin_${flavor}.theme
 
   if [[ ! -f $themes_dir/$target ]]; then
