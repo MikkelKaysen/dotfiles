@@ -80,6 +80,26 @@ vim.api.nvim_create_autocmd("FileType", {
 -- Neorg v9.6.4 indentexpr calls the legacy vim.fn["nvim_treesitter#indent"]() for
 -- injected code blocks, which nvim-treesitter main does not provide. Delegate those
 -- lines to the current nvim-treesitter indent; keep Neorg's indent for norg lines.
+
+-- Column of the enclosing ranged tag (e.g. the "@code" line) for a line inside injected
+-- code. The raw nvim-treesitter indent is relative to column 0, so the tag column is
+-- added for every injected line (upstream only does this for blank leading lines).
+local function enclosing_tag_column(buf, line, text)
+  local ok, node = pcall(vim.treesitter.get_node, {
+    bufnr = buf,
+    pos = { line, #text },
+    ignore_injections = true,
+  })
+  while ok and node do
+    if node:type() == "ranged_verbatim_tag" then
+      local _, col = node:start()
+      return col
+    end
+    node = node:parent()
+  end
+  return 0
+end
+
 local M = {}
 M.indentexpr = function()
   local buf = vim.api.nvim_get_current_buf()
@@ -90,7 +110,11 @@ M.indentexpr = function()
     parser:parse(true) -- injections must exist before the range lookup
     local lang = parser:language_for_range({ line, #text, line, #text })
     if lang and lang:lang() ~= "norg" then
-      return require("nvim-treesitter").indentexpr()
+      local raw = require("nvim-treesitter").indentexpr()
+      if type(raw) ~= "number" or raw < 0 then
+        return raw -- -1 keeps Neovim's own indent
+      end
+      return raw + enclosing_tag_column(buf, line, text)
     end
   end
   return require("neorg").modules.get_module("core.esupports.indent").indentexpr(buf, line)
