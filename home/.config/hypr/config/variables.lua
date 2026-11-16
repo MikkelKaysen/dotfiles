@@ -16,4 +16,4 @@ MONITOR3 = ""
 PRIMARY_MONITOR = MONITOR1
 
 -- Workspaces
-NUM_WPM = 3 -- Number of workspaces per monitor (Max 10)
+NUM_WPM = 6 -- Numbered workspaces bound to keys 1..N (Max 10). hyprmoncfg plans 1-6.
