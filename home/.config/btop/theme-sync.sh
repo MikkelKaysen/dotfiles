@@ -190,20 +190,24 @@ _btop_main() {
       print -u2 -r -- "btop theme-sync: refusing to replace non-symlink $link"
       return 1
     fi
-    if [[ $(readlink -- "$link") == $target ]]; then
+    if [[ "$(readlink -- "$link")" == "$target" ]]; then
       return 0
     fi
   fi
 
   # Atomic replacement: create a unique sibling symlink (ln fails if it exists),
-  # then rename it over the existing symlink.
+  # then rename it over the existing symlink. The temp link is removed only if
+  # this run created it (a failed ln never touches a preexisting name).
   tmp=$themes_dir/.${link_name}.tmp.$$.$RANDOM
-  ln -s -- "$target" "$tmp" || { print -u2 -r -- "btop theme-sync: cannot create $tmp"; return 1; }
-  if ! mv -f -- "$tmp" "$link"; then
-    rm -f -- "$tmp"
-    print -u2 -r -- "btop theme-sync: failed to update $link"
+  if ! ln -s -- "$target" "$tmp"; then
+    print -u2 -r -- "btop theme-sync: cannot create $tmp"
     return 1
   fi
+  {
+    mv -f -- "$tmp" "$link" || { print -u2 -r -- "btop theme-sync: failed to update $link"; return 1 }
+  } always {
+    [[ -L $tmp ]] && rm -f -- "$tmp"
+  }
   return 0
 }
 
