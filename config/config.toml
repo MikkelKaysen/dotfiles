@@ -26,7 +26,7 @@ mode = "0755"
 
 [dotfiles]
 "~/.config/bat" = { mode = "track" }
-"~/.config/btop" = { mode = "track" }
+"~/.config/btop" = { mode = "track", exclude = ["themes/catppuccin.theme"] }
 "~/.config/fnox/config.toml" = { mode = "track", encrypt = true }
 "~/.config/git/default.config" = { source = "git/default.config", mode = "copy" }
 "~/.config/git/default/core" = { source = "git/default/core", mode = "copy" }

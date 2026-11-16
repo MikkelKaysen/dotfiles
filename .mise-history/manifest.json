@@ -89,7 +89,10 @@
       "path": "home/.config/btop",
       "autosave": true,
       "encrypt": false,
-      "variants": []
+      "variants": [],
+      "exclude": [
+        "themes/catppuccin.theme"
+      ]
     },
     {
       "path": "home/.config/fnox/config.toml",
