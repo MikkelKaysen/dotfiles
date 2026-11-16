@@ -5,6 +5,35 @@
 
 local TS = require("nvim-treesitter")
 
+-- Neorg grammars are not in the upstream main-branch registry, so they are
+-- added to the parsers table here (a plain table returned by
+-- nvim-treesitter.parsers). Pinned to the tags Neorg v9.6.4 expects.
+-- Requires a C++ compiler (norg's scanner.cc). Re-applied after TSUpdate,
+-- because a parser update may rebuild that table.
+local function register_neorg_parsers()
+  local parsers = require("nvim-treesitter.parsers")
+  parsers.norg = {
+    install_info = {
+      url = "https://github.com/nvim-neorg/tree-sitter-norg",
+      revision = "aa1a1a7ded81a094cc3d5cb14bea6f34b86d8688", -- tag v0.2.4
+    },
+    tier = 2,
+  }
+  parsers.norg_meta = {
+    install_info = {
+      url = "https://github.com/nvim-neorg/tree-sitter-norg-meta",
+      revision = "6f0510cc516a3af3396a682fbd6655486c2c9d2d", -- tag v0.1.0
+    },
+    tier = 2,
+  }
+end
+register_neorg_parsers()
+vim.api.nvim_create_autocmd("User", {
+  pattern = "TSUpdate",
+  group = vim.api.nvim_create_augroup("neorg_parser_registry", { clear = true }),
+  callback = register_neorg_parsers,
+})
+
 local opts = {
   indent = { enable = true },
   highlight = { enable = true },
@@ -24,6 +53,8 @@ local opts = {
     "luap",
     "markdown",
     "markdown_inline",
+    "norg",
+    "norg_meta",
     "printf",
     "python",
     "query",
