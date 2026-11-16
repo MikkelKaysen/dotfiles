@@ -89,7 +89,6 @@ cargo-binstall = "latest"
 eza = "latest"
 uv = "latest"
 codegraph = "latest"
-"cargo:MikkelKaysen/agent-top" = { version = "branch:feature/opencode-v2", crate = "agent-top" }
 playwright = "1.64.1"
 "cargo:abtop" = "latest"
 
