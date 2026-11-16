@@ -4,31 +4,21 @@
 -- change, staged content, conflict, or in-progress git operation stops the run.
 -- Runs are serialized per session and guarded by a lock directory in the git dir.
 -- Nothing is ever forced, reset, stashed, or auto-aborted.
+--
+-- Pipeline: validate (no network) -> stage/commit (offline OK) -> pull --rebase -> push.
+-- A failed pull leaves the local commit in place; the next sync retries.
 
 local M = {}
 
 local uv = vim.uv
 
-local COMMIT_MESSAGE = "__NOTES_SYNC_COMMIT_MESSAGE__" -- placeholder until the commit-message delegate text is wired in
+local COMMIT_MESSAGE = "__NOTES_SYNC_COMMIT_MESSAGE__" -- placeholder until the delegated message is wired in
 local ALLOWED_STATUS = { ["??"] = true, [" M"] = true, [" D"] = true }
 local IN_PROGRESS = { "MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "rebase-merge", "rebase-apply", "index.lock" }
+local REPO_ENV = { "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR" }
 
-local cfg = {
-  root = nil, -- absolute path of the notes repository (real path)
-  expected_remote = nil, -- ssh URL that origin fetch and push must equal
-  debounce_ms = 5000,
-  timeout_ms = 120000,
-}
-
-local st = {
-  busy = false,
-  queued = false,
-  paused = false, -- set after a failure; auto runs stop until :NotesSync
-  deferred = false, -- last run postponed (unsaved buffers, or files changed mid-run)
-  initial_done = false,
-  timer = nil,
-  setup_done = false,
-}
+local cfg = { root = nil, expected_remote = nil, debounce_ms = 5000, timeout_ms = 120000, ready = false }
+local st = { busy = false, queued = false, paused = false, deferred = false, initial_done = false, timer = nil }
 
 ---@param msg string
 ---@param level? integer
@@ -38,10 +28,10 @@ local function notify(msg, level)
   end)
 end
 
----@param s string
+---@param s? string
 ---@param n? integer
 local function short(s, n)
-  s = vim.trim(s or ""):gsub("%c+", " ")
+  s = (vim.trim(s or ""):gsub("%c+", " "))
   n = n or 300
   if #s > n then
     s = s:sub(1, n) .. "..."
@@ -49,26 +39,23 @@ local function short(s, n)
   return s
 end
 
----@param path string
-local function in_scope_path(path)
-  if not cfg.root or not path then
+---@param path? string
+---@return boolean
+local function in_scope(path)
+  if not (cfg.root and path and path:sub(1, #cfg.root + 1) == cfg.root .. "/") then
     return false
   end
-  local prefix = cfg.root .. "/"
-  if path:sub(1, #prefix) ~= prefix then
-    return false
-  end
-  local rel = path:sub(#prefix + 1)
-  return (rel:match("^personal/.+%.norg$") or rel:match("^work/.+%.norg$")) ~= nil
+  local rel = path:sub(#cfg.root + 2)
+  return rel:match("^personal/.+%.norg$") ~= nil or rel:match("^work/.+%.norg$") ~= nil
 end
 
+-- Any loaded, modified buffer under the notes root defers the run.
 ---@return boolean
-local function notes_buffer_modified()
+local function buffers_modified()
   local prefix = cfg.root .. "/"
   for _, b in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_is_loaded(b) and vim.bo[b].modified then
-      local name = vim.api.nvim_buf_get_name(b)
-      if name:sub(1, #prefix) == prefix then
+      if vim.api.nvim_buf_get_name(b):sub(1, #prefix) == prefix then
         return true
       end
     end
@@ -76,42 +63,48 @@ local function notes_buffer_modified()
   return false
 end
 
--- Runs git with an argv list in the notes repo. Never prompts, never runs a shell.
+-- Runs git with an argv list in the notes repo. Never prompts; never uses a shell.
+-- Spawn failures (e.g. missing git) are reported through cb instead of thrown.
 ---@param args string[]
 ---@param cb fun(ok: boolean, stdout: string, stderr: string)
 local function git(args, cb)
-  local argv = vim.list_extend({ "git" }, args)
   local env = {
     GIT_TERMINAL_PROMPT = "0",
-    -- Skip only the LocalAI prepare-commit-msg hook; all other hooks stay active.
+    -- Skip only the LocalAI prepare-commit-msg hook; other hooks stay active.
     SKIP_LLM_GITHOOK = "1",
-    -- Batch mode: fail instead of prompting. Overrides core.sshCommand, but ~/.ssh/config still applies.
+    -- Batch mode fails instead of prompting. ~/.ssh/config still applies.
     GIT_SSH_COMMAND = vim.env.GIT_SSH_COMMAND or "ssh -o BatchMode=yes -o ConnectTimeout=20",
   }
-  vim.system(argv, { cwd = cfg.root, env = env, timeout = cfg.timeout_ms }, function(r)
+  local ok, err = pcall(vim.system, vim.list_extend({ "git" }, args), {
+    cwd = cfg.root,
+    env = env,
+    timeout = cfg.timeout_ms,
+  }, function(r)
     vim.schedule(function()
       cb(r.code == 0, r.stdout or "", r.stderr or "")
     end)
   end)
+  if not ok then
+    vim.schedule(function()
+      cb(false, "", "could not run git: " .. tostring(err))
+    end)
+  end
 end
 
--- Splits a NUL-terminated list (git -z output).
 ---@param out string
 ---@return string[]
-local function split_nul(out)
-  local items = {}
-  for item in out:gmatch("([^%z]+)") do
-    items[#items + 1] = item
+local function lines(out)
+  local res = {}
+  for l in out:gmatch("[^\n]+") do
+    res[#res + 1] = l
   end
-  return items
+  return res
 end
 
--- Parses `git status --porcelain=v1 -z --untracked-files=all --no-renames`.
----@param out string
+-- Parses `git status --porcelain=v1 -z --untracked-files=all --no-renames` (NUL-safe).
 ---@return {xy: string, path: string}[]?, string?
 local function parse_status(out)
-  local entries = {}
-  local i = 1
+  local entries, i = {}, 1
   while i <= #out do
     local nul = out:find("\0", i, true)
     if not nul then
@@ -124,9 +117,8 @@ local function parse_status(out)
   return entries
 end
 
--- Rejects unsafe paths: absolute, parent refs, or any symlink/non-directory ancestor.
--- Missing paths (deletions) are fine as long as their existing ancestors are plain directories.
----@param rel string
+-- Rejects absolute/parent paths, non-norg files, and any symlink or non-directory ancestor.
+-- Missing targets (deletions) are fine when their existing ancestors are real directories.
 ---@return boolean, string?
 local function safe_rel_path(rel)
   if rel:sub(1, 1) == "/" or rel:find("%.%.") or rel:find("\\", 1, true) then
@@ -135,8 +127,8 @@ local function safe_rel_path(rel)
   if not (rel:match("^personal/.+%.norg$") or rel:match("^work/.+%.norg$")) then
     return false, "path outside personal/ or work/ .norg files"
   end
-  local acc = cfg.root
   local parts = vim.split(rel, "/", { plain = true })
+  local acc = cfg.root
   for idx, part in ipairs(parts) do
     acc = acc .. "/" .. part
     local stat = uv.fs_lstat(acc)
@@ -152,14 +144,12 @@ local function safe_rel_path(rel)
   return true
 end
 
--- Validates the status entries. Returns the list of norg paths to stage.
----@param entries {xy: string, path: string}[]
 ---@return string[]?, string?
 local function validate_entries(entries)
   local paths = {}
   for _, e in ipairs(entries) do
     if not ALLOWED_STATUS[e.xy] then
-      return nil, "refusing: unexpected change state '" .. e.xy .. "' (staged, conflicted, or non-note change)"
+      return nil, "refusing: change state '" .. e.xy .. "' (staged, conflicted, or non-note change)"
     end
     local ok, why = safe_rel_path(e.path)
     if not ok then
@@ -170,71 +160,53 @@ local function validate_entries(entries)
   return paths
 end
 
--- Lock directory in the git dir. Stale locks are NOT removed automatically.
-local function acquire_lock(gitdir)
-  local dir = gitdir .. "/notes-sync.lock"
-  local ok, err = uv.fs_mkdir(dir, 448)
-  if not ok then
-    return nil, "another NotesSync is running or a stale lock exists (" .. dir .. "): " .. short(tostring(err), 120)
-  end
-  return dir
+-- Sorted copy used to compare path sets.
+local function sorted(list)
+  local c = vim.deepcopy(list)
+  table.sort(c)
+  return c
 end
 
--- Sequential async steps. Each step(ctx, next) calls next(ok, detail).
----@param steps {name: string, run: fun(ctx: table, next: fun(ok: boolean, detail?: string))}[]
----@param done fun(ok: boolean, failed?: string, detail?: string, ctx: table)
-local function run_steps(steps, done)
-  local ctx = {}
-  local function go(i)
-    local step = steps[i]
-    if not step then
-      return done(true, nil, nil, ctx)
-    end
-    step.run(ctx, function(ok, detail)
-      if not ok then
-        return done(false, step.name, detail, ctx)
-      end
-      go(i + 1)
-    end)
-  end
-  go(1)
-end
-
-local function finish(ok, failed, detail, ctx)
+-- Ends a run in every case: releases the lock, clears busy, reports, reloads, drains queue.
+---@param ctx table
+---@param ok boolean
+---@param step? string
+---@param detail? string
+local function finish(ctx, ok, step, detail)
   if ctx.lockdir then
     uv.fs_rmdir(ctx.lockdir)
+    ctx.lockdir = nil
   end
   st.busy = false
 
-  if not ok then
-    if ctx.lock_refused then
-      notify(detail or "busy", vim.log.levels.WARN)
-    else
-      st.paused = true
-      notify(
-        ("sync failed at '%s': %s. Auto sync paused; fix the repo (see README) then run :NotesSync."):format(
-          failed or "?",
-          short(detail)
-        ),
-        vim.log.levels.ERROR
-      )
-    end
-  elseif ctx.skipped then
+  if ok and ctx.skipped then
     st.deferred = true
-    notify(ctx.skipped .. " (saved changes stay local until the next sync)", vim.log.levels.WARN)
-  else
+    notify(ctx.skipped .. "; changes stay local until the next sync", vim.log.levels.WARN)
+  elseif ok then
     st.deferred = false
     notify(ctx.summary or "sync complete")
+  elseif ctx.lock_refused then
+    notify(detail or "busy", vim.log.levels.WARN)
+  else
+    st.paused = true
+    notify(
+      ("sync failed at '%s': %s. Auto sync paused; fix the repo (see README) then run :NotesSync."):format(
+        step or "?",
+        short(detail)
+      ),
+      vim.log.levels.ERROR
+    )
   end
 
-  -- Reload only unmodified notes buffers, never force-reload.
+  -- Reload only unmodified notes buffers; never force-reload.
   local prefix = cfg.root .. "/"
   for _, b in ipairs(vim.api.nvim_list_bufs()) do
-    local name = vim.api.nvim_buf_is_loaded(b) and vim.api.nvim_buf_get_name(b) or ""
-    if name:sub(1, #prefix) == prefix and not vim.bo[b].modified then
-      vim.api.nvim_buf_call(b, function()
-        vim.cmd("silent! checktime")
-      end)
+    if vim.api.nvim_buf_is_loaded(b) and not vim.bo[b].modified then
+      if vim.api.nvim_buf_get_name(b):sub(1, #prefix) == prefix then
+        vim.api.nvim_buf_call(b, function()
+          vim.cmd("silent! checktime")
+        end)
+      end
     end
   end
 
@@ -244,48 +216,83 @@ local function finish(ok, failed, detail, ctx)
   end
 end
 
+-- Runs steps in order. Each step is {name, fn(ctx, next)}; next(ok, detail) continues.
+local function pipeline(steps, ctx, done)
+  local i = 0
+  local function next_step(ok, detail)
+    if not ok then
+      return done(false, steps[i].name, detail)
+    end
+    i = i + 1
+    local step = steps[i]
+    if not step then
+      return done(true)
+    end
+    local called, err = pcall(step.fn, ctx, next_step)
+    if not called then
+      done(false, step.name, "internal error: " .. tostring(err))
+    end
+  end
+  next_step(true)
+end
+
+-- One git query whose stdout must match `expect`.
+local function expect_git(args, expect, msg)
+  return function(_, next)
+    git(args, function(ok, out)
+      if not ok or vim.trim(out) ~= expect then
+        return next(false, msg)
+      end
+      next(true)
+    end)
+  end
+end
+
 local function build_steps()
   return {
     {
       name = "repo",
-      run = function(ctx, next)
+      fn = function(ctx, next)
         git({ "rev-parse", "--show-toplevel", "--absolute-git-dir" }, function(ok, out, err)
           if not ok then
             return next(false, err)
           end
-          local top, gitdir = out:match("^(.-)\n(.-)\n?$")
-          if not top or uv.fs_realpath(vim.trim(top)) ~= cfg.root then
+          local l = lines(out)
+          if #l < 2 or uv.fs_realpath(l[1]) ~= cfg.root then
             return next(false, "not the notes repository root")
           end
-          ctx.gitdir = vim.trim(gitdir)
-          local lockdir, lerr = acquire_lock(ctx.gitdir)
+          ctx.gitdir = l[2]
+          local lockdir, lerr = uv.fs_mkdir(ctx.gitdir .. "/notes-sync.lock", 448)
           if not lockdir then
             ctx.lock_refused = true
-            return next(false, lerr)
+            return next(false, "another NotesSync is running or a stale lock exists (" .. ctx.gitdir .. "/notes-sync.lock): " .. short(tostring(lerr), 120))
           end
-          ctx.lockdir = lockdir
+          ctx.lockdir = ctx.gitdir .. "/notes-sync.lock"
           next(true)
         end)
       end,
     },
+    -- Local-only checks (no network). Remote and upstream are validated from config.
+    { name = "branch", fn = expect_git({ "symbolic-ref", "-q", "HEAD" }, "refs/heads/main", "HEAD is not refs/heads/main") },
     {
-      name = "branch",
-      run = function(ctx, next)
-        git({ "symbolic-ref", "-q", "HEAD" }, function(ok, out)
-          if not ok or vim.trim(out) ~= "refs/heads/main" then
-            return next(false, "HEAD is not refs/heads/main")
+      name = "upstream",
+      fn = function(ctx, next)
+        expect_git({ "config", "--get", "branch.main.remote" }, "origin", "branch.main.remote is not origin")(ctx, function(ok, d)
+          if not ok then
+            return next(false, d)
           end
-          if notes_buffer_modified() then
-            ctx.skipped = "unsaved notes buffers, sync deferred"
-            return next(true)
-          end
-          next(true)
+          expect_git({ "config", "--get", "branch.main.merge" }, "refs/heads/main", "branch.main.merge is not refs/heads/main")(ctx, function(ok2, d2)
+            if not ok2 then
+              return next(false, d2)
+            end
+            expect_git({ "rev-parse", "--symbolic-full-name", "main@{upstream}" }, "refs/remotes/origin/main", "main does not track origin/main")(ctx, next)
+          end)
         end)
       end,
     },
     {
       name = "remote",
-      run = function(ctx, next)
+      fn = function(ctx, next)
         git({ "remote", "get-url", "--all", "origin" }, function(ok1, fetch_out, err1)
           if not ok1 then
             return next(false, err1)
@@ -294,11 +301,11 @@ local function build_steps()
             if not ok2 then
               return next(false, err2)
             end
-            local fetch_urls, push_urls = split_nul(fetch_out:gsub("\n", "\0")), split_nul(push_out:gsub("\n", "\0"))
-            if #fetch_urls ~= 1 or fetch_urls[1] ~= cfg.expected_remote then
+            local f, p = lines(fetch_out), lines(push_out)
+            if #f ~= 1 or f[1] ~= cfg.expected_remote then
               return next(false, "origin fetch URL differs from expected remote")
             end
-            if #push_urls ~= 1 or push_urls[1] ~= cfg.expected_remote then
+            if #p ~= 1 or p[1] ~= cfg.expected_remote then
               return next(false, "origin push URL(s) differ from expected remote (pushurl set?)")
             end
             next(true)
@@ -308,7 +315,7 @@ local function build_steps()
     },
     {
       name = "in-progress",
-      run = function(ctx, next)
+      fn = function(_, next)
         local args = { "rev-parse" }
         for _, name in ipairs(IN_PROGRESS) do
           vim.list_extend(args, { "--git-path", name })
@@ -317,8 +324,7 @@ local function build_steps()
           if not ok then
             return next(false, err)
           end
-          local lines = vim.split(vim.trim(out), "\n", { plain = true })
-          for _, p in ipairs(lines) do
+          for _, p in ipairs(lines(out)) do
             local abs = p:sub(1, 1) == "/" and p or (cfg.root .. "/" .. p)
             if uv.fs_lstat(abs) then
               return next(false, "git operation in progress or index locked (" .. p .. "); resolve it first")
@@ -329,24 +335,8 @@ local function build_steps()
       end,
     },
     {
-      name = "fetch",
-      run = function(ctx, next)
-        git({ "fetch", "--no-tags", "origin", "main" }, function(ok, _, err)
-          if not ok then
-            return next(false, err)
-          end
-          git({ "rev-parse", "--verify", "-q", "refs/remotes/origin/main" }, function(ok2)
-            if not ok2 then
-              return next(false, "origin/main does not exist; bootstrap the repo first (see README)")
-            end
-            next(true)
-          end)
-        end)
-      end,
-    },
-    {
       name = "status",
-      run = function(ctx, next)
+      fn = function(ctx, next)
         git({ "status", "--porcelain=v1", "-z", "--untracked-files=all", "--no-renames" }, function(ok, out, err)
           if not ok then
             return next(false, err)
@@ -365,9 +355,19 @@ local function build_steps()
       end,
     },
     {
+      -- Unsaved notes defer the whole run: no staging, commit, or pull.
+      name = "defer-check",
+      fn = function(ctx, next)
+        if buffers_modified() then
+          ctx.skipped = "unsaved notes buffers, sync deferred"
+        end
+        next(true)
+      end,
+    },
+    {
       name = "stage",
-      run = function(ctx, next)
-        if #ctx.paths == 0 then
+      fn = function(ctx, next)
+        if ctx.skipped or #ctx.paths == 0 then
           return next(true)
         end
         local args = { "--literal-pathspecs", "add", "--" }
@@ -380,11 +380,11 @@ local function build_steps()
             if not ok2 then
               return next(false, "could not read staged files")
             end
-            local staged = split_nul(out)
-            table.sort(staged)
-            local want = vim.deepcopy(ctx.paths)
-            table.sort(want)
-            if vim.inspect(staged) ~= vim.inspect(want) then
+            local staged = {}
+            for item in out:gmatch("([^%z]+)") do
+              staged[#staged + 1] = item
+            end
+            if vim.inspect(sorted(staged)) ~= vim.inspect(sorted(ctx.paths)) then
               return next(false, "staged set differs from validated note paths")
             end
             next(true)
@@ -394,27 +394,28 @@ local function build_steps()
     },
     {
       name = "commit",
-      run = function(ctx, next)
-        if #ctx.paths == 0 then
+      fn = function(ctx, next)
+        if ctx.skipped or #ctx.paths == 0 then
           return next(true)
         end
         git({ "commit", "-m", COMMIT_MESSAGE }, function(ok, _, err)
           if not ok then
             return next(false, err)
           end
-          ctx.summary = ("committed %d note change(s)"):format(#ctx.paths)
+          ctx.summary = ("committed %d note change(s) locally"):format(#ctx.paths)
           next(true)
         end)
       end,
     },
     {
+      -- Re-validate after async work; anything still changing defers the pull.
       name = "recheck",
-      run = function(ctx, next)
+      fn = function(ctx, next)
         if ctx.skipped then
           return next(true)
         end
-        if notes_buffer_modified() then
-          ctx.skipped = "notes changed during sync, pull deferred"
+        if buffers_modified() then
+          ctx.skipped = "notes changed during sync"
           return next(true)
         end
         git({ "status", "--porcelain=v1", "-z", "--untracked-files=all", "--no-renames" }, function(ok, out, err)
@@ -430,7 +431,7 @@ local function build_steps()
             if why then
               return next(false, why)
             end
-            ctx.skipped = "notes changed during sync, pull deferred"
+            ctx.skipped = "notes changed during sync"
           end
           next(true)
         end)
@@ -438,13 +439,13 @@ local function build_steps()
     },
     {
       name = "pull",
-      run = function(ctx, next)
+      fn = function(ctx, next)
         if ctx.skipped then
           return next(true)
         end
         git({ "pull", "--rebase", "--no-autostash", "origin", "main" }, function(ok, _, err)
           if not ok then
-            return next(false, err .. " (resolve with git status; rebase --continue or --abort; then :NotesSync)")
+            return next(false, err .. " (local commit kept; resolve with git status, rebase --continue or --abort, then :NotesSync)")
           end
           next(true)
         end)
@@ -452,7 +453,7 @@ local function build_steps()
     },
     {
       name = "push",
-      run = function(ctx, next)
+      fn = function(ctx, next)
         if ctx.skipped then
           return next(true)
         end
@@ -460,9 +461,7 @@ local function build_steps()
           if not ok then
             return next(false, err)
           end
-          if not ctx.summary then
-            ctx.summary = "sync complete"
-          end
+          ctx.summary = ctx.summary and (ctx.summary .. ", pushed") or "synced"
           next(true)
         end)
       end,
@@ -470,10 +469,10 @@ local function build_steps()
   }
 end
 
--- Starts a sync. "auto" respects pause/deferral; "manual" clears pause.
+-- Starts a sync. "auto" respects pause and deferral; "manual" clears pause.
 ---@param kind "auto"|"manual"
 function M.run(kind)
-  if not cfg.setup_done then
+  if not cfg.ready then
     return
   end
   if st.busy then
@@ -486,16 +485,15 @@ function M.run(kind)
   if kind == "manual" then
     st.paused = false
   end
-  -- Git-invoked or wrapped Neovim may inherit repo redirection variables; refuse
-  -- rather than operating an external index/worktree. SSH/user git config is untouched.
-  for _, var in ipairs({ "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR" }) do
+  -- Inherited repo redirection would make git operate an external index or worktree.
+  for _, var in ipairs(REPO_ENV) do
     if vim.env[var] and vim.env[var] ~= "" then
       st.paused = true
       notify(("refusing sync: %s is set in the environment. Unset it and run :NotesSync."):format(var), vim.log.levels.ERROR)
       return
     end
   end
-  if notes_buffer_modified() then
+  if buffers_modified() then
     if kind == "manual" then
       notify("save or discard unsaved notes buffers first (sync not started)", vim.log.levels.WARN)
     else
@@ -503,10 +501,16 @@ function M.run(kind)
     end
     return
   end
+
   st.busy = true
-  run_steps(build_steps(), function(ok, failed, detail, ctx)
-    finish(ok, failed, detail, ctx)
+  local ctx = {}
+  local ok, err = pcall(pipeline, build_steps(), ctx, function(done_ok, step, detail)
+    finish(ctx, done_ok, step, detail)
   end)
+  if not ok then
+    -- Unexpected error before the pipeline ran: release everything and report.
+    finish(ctx, false, "start", tostring(err))
+  end
 end
 
 local function arm_timer()
@@ -525,7 +529,7 @@ end
 
 ---@class NotesSyncOpts
 ---@field root string absolute path of the notes repo
----@field expected_remote string ssh URL origin must use
+---@field expected_remote string ssh URL origin fetch and push must equal
 ---@field debounce_ms? integer
 ---@field timeout_ms? integer
 
@@ -533,23 +537,20 @@ end
 function M.setup(opts)
   opts = opts or {}
   assert(opts.root and opts.expected_remote, "notes_sync.setup: root and expected_remote are required")
+  cfg.root = uv.fs_realpath(vim.fs.normalize(opts.root)) or vim.fs.normalize(opts.root)
+  cfg.expected_remote = opts.expected_remote
   cfg.debounce_ms = opts.debounce_ms or cfg.debounce_ms
   cfg.timeout_ms = opts.timeout_ms or cfg.timeout_ms
-  cfg.expected_remote = opts.expected_remote
-  cfg.root = uv.fs_realpath(vim.fs.normalize(opts.root)) or vim.fs.normalize(opts.root)
-  cfg.setup_done = true
+  cfg.ready = true
 
   local group = vim.api.nvim_create_augroup("NotesSyncAuto", { clear = true })
 
-  -- First note of the session (after the initial BufRead) triggers one sync.
+  -- The first note of the session triggers one sync.
   vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
     group = group,
     pattern = "*.norg",
     callback = function(ev)
-      if st.initial_done then
-        return
-      end
-      if in_scope_path(vim.api.nvim_buf_get_name(ev.buf)) then
+      if not st.initial_done and in_scope(vim.api.nvim_buf_get_name(ev.buf)) then
         st.initial_done = true
         vim.schedule(function()
           M.run("auto")
@@ -558,11 +559,12 @@ function M.setup(opts)
     end,
   })
 
+  -- Saving a note (re)arms the debounce; a deferred run resumes on the next save.
   vim.api.nvim_create_autocmd("BufWritePost", {
     group = group,
     pattern = "*.norg",
     callback = function(ev)
-      if in_scope_path(vim.api.nvim_buf_get_name(ev.buf)) then
+      if in_scope(vim.api.nvim_buf_get_name(ev.buf)) then
         arm_timer()
       end
     end,
@@ -572,12 +574,8 @@ function M.setup(opts)
   vim.api.nvim_create_autocmd("VimLeavePre", {
     group = group,
     callback = function()
-      local pending = st.busy or (st.timer and st.timer:is_active()) or st.deferred
-      if pending then
-        vim.notify(
-          "NotesSync: sync pending at exit. Saved changes persist; run :NotesSync next session.",
-          vim.log.levels.WARN
-        )
+      if st.busy or st.deferred or (st.timer and st.timer:is_active()) then
+        vim.notify("NotesSync: sync pending at exit. Saved changes persist; run :NotesSync next session.", vim.log.levels.WARN)
       end
     end,
   })
@@ -587,7 +585,7 @@ function M.setup(opts)
   end, { desc = "Sync the Neorg notes repository (commit, pull --rebase, push)" })
 end
 
--- test hook: expose pure helpers for focused fixture tests
+-- Exposed for fixture tests.
 M._parse_status = parse_status
 M._safe_rel_path = safe_rel_path
 
