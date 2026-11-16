@@ -505,6 +505,11 @@ function M.run(kind)
   if not cfg.ready then
     return
   end
+  -- TODO: replace COMMIT_MESSAGE with the delegated commit-message text before enabling sync.
+  if COMMIT_MESSAGE == "__NOTES_SYNC_COMMIT_MESSAGE__" then
+    notify("setup unfinished: commit message placeholder still set; sync disabled (no git run)", vim.log.levels.WARN)
+    return
+  end
   if st.busy then
     st.queued = true
     return
