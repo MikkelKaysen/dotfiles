@@ -5,20 +5,13 @@
 
 local TS = require("nvim-treesitter")
 
--- Neorg grammars are not in the upstream main-branch registry, so they are
--- added to the parsers table here (a plain table returned by
--- nvim-treesitter.parsers). Pinned to the tags Neorg v9.6.4 expects.
--- Requires a C++ compiler (norg's scanner.cc). Re-applied after TSUpdate,
--- because a parser update may rebuild that table.
+-- Neorg grammars are not in the upstream main-branch registry. norg_meta is registered
+-- here (native install, pinned). The norg parser itself is built by util/norg_parser.lua
+-- from a pinned commit: it is deliberately NOT in the parsers table, so nvim-treesitter
+-- never tries to install or update it natively. Re-applied after TSUpdate, because a
+-- parser update may rebuild that table.
 local function register_neorg_parsers()
   local parsers = require("nvim-treesitter.parsers")
-  parsers.norg = {
-    install_info = {
-      url = "https://github.com/nvim-neorg/tree-sitter-norg",
-      revision = "aa1a1a7ded81a094cc3d5cb14bea6f34b86d8688", -- tag v0.2.4
-    },
-    tier = 2,
-  }
   parsers.norg_meta = {
     install_info = {
       url = "https://github.com/nvim-neorg/tree-sitter-norg-meta",
@@ -53,7 +46,6 @@ local opts = {
     "luap",
     "markdown",
     "markdown_inline",
-    "norg",
     "norg_meta",
     "printf",
     "python",
@@ -72,6 +64,8 @@ local opts = {
 
 TS.setup(opts)
 require("util.treesitter").get_installed(true)
+-- Custom norg parser: builds in the background only when missing or outdated.
+require("util.norg_parser").setup()
 
 -- Angular: use the angular parser for component templates
 vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
