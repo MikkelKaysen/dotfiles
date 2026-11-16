@@ -98,6 +98,7 @@ hl.workspace_rule({ workspace = "3", monitor = "desc:Apple Computer Inc Color LC
 hl.workspace_rule({ workspace = "4", monitor = "desc:Dell Inc. DELL P2416D 07C5368H2DPL", default = true, persistent = true })
 hl.workspace_rule({ workspace = "5", monitor = "desc:Dell Inc. DELL P2416D 07C5368H2DPL" })
 hl.workspace_rule({ workspace = "6", monitor = "desc:Dell Inc. DELL P2416D 07C5368H2DPL" })
+hl.workspace_rule({ workspace = "name:gaming", monitor = "desc:Dell Inc. DELL P2416D 07C5368H2DPL" })
 
 -- Omarchy leaves GDK_SCALE to this file.
 if type(o) == "table" then
