@@ -102,6 +102,10 @@ vim.api.nvim_create_autocmd({ "FileType", "BufEnter" }, {
   group = vim.api.nvim_create_augroup("neorg_indent_wrapper", { clear = true }),
   pattern = { "norg", "*.norg" },
   callback = function(ev)
+    -- pattern "*.norg" can match a non-norg buffer (e.g. a file literally named "norg"); only norg buffers get the wrapper
+    if vim.bo[ev.buf].filetype ~= "norg" then
+      return
+    end
     vim.bo[ev.buf].indentexpr = "v:lua.require'plugins.neorg'.indentexpr()"
   end,
 })
