@@ -7,3 +7,23 @@ login_shell = "/bin/zsh"
 "dnf:zsh" = { os = "linux" }
 "apt:zsh" = { os = "linux" }
 "pacman:zsh" = { os = "linux" }
+
+# mise's `aur:` manager needs paru or yay, and vanilla Arch ships neither in
+# its repositories. Provide a helper on every pacman machine; other distros
+# return immediately.
+[bootstrap.hooks.pre-packages]
+description = "Ensure an AUR helper exists on Arch"
+run = '''
+command -v pacman >/dev/null 2>&1 || exit 0
+if ! command -v paru >/dev/null 2>&1; then
+  if pacman -Si paru >/dev/null 2>&1; then
+    sudo pacman -S --needed --noconfirm paru || exit 1
+  else
+    sudo pacman -S --needed --noconfirm base-devel git || exit 1
+    d=$(mktemp -d) || exit 1
+    git clone --depth 1 https://aur.archlinux.org/paru-bin.git "$d/paru-bin" || { rm -rf "$d"; exit 1; }
+    (cd "$d/paru-bin" && makepkg -si --noconfirm) || { rm -rf "$d"; exit 1; }
+    rm -rf "$d"
+  fi
+fi
+'''

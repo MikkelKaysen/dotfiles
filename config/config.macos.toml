@@ -3,3 +3,4 @@ login_shell = "/opt/homebrew/bin/zsh"
 
 [bootstrap.packages]
 "brew:zsh" = { os = "macos" }
+"brew:kanata" = "latest"
