@@ -548,7 +548,6 @@ plugins {
 // eg. "https://example.com/my-plugin.wasm"
 load_plugins {
     zellij:link
-    zjframes
     zjhints
 }
 web_client {
