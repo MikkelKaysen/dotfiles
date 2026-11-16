@@ -107,7 +107,19 @@
       "variants": []
     },
     {
+      "path": "home/.config/ghostty",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "home/.config/git/hooks",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "home/.config/hypr",
       "autosave": true,
       "encrypt": false,
       "variants": []
@@ -120,6 +132,12 @@
     },
     {
       "path": "home/.config/kanata/macos.kbd",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "home/.config/noctalia",
       "autosave": true,
       "encrypt": false,
       "variants": []

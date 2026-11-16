@@ -28,10 +28,12 @@ mode = "0755"
 "~/.config/bat" = { mode = "track" }
 "~/.config/btop" = { mode = "track", exclude = ["themes/catppuccin.theme"] }
 "~/.config/fnox/config.toml" = { mode = "track", encrypt = true }
+"~/.config/ghostty" = { mode = "track" }
 "~/.config/git/default.config" = { source = "git/default.config", mode = "copy" }
 "~/.config/git/default/core" = { source = "git/default/core", mode = "copy" }
 "~/.config/git/default/user" = { source = "git/default/user", mode = "copy", permissions = "0644" }
 "~/.config/git/hooks" = { mode = "track" }
+"~/.config/hypr" = { mode = "track" }
 "~/.config/kanata/linux.kbd" = { mode = "track" }
 "~/.config/kanata/macos.kbd" = { mode = "track" }
 "~/.config/mise/config.desktop.toml" = { mode = "track" }
@@ -48,6 +50,7 @@ mode = "0755"
 "~/.config/mise/templates/git" = { mode = "track" }
 "~/.config/mise/templates/miserc.local.toml.tmpl" = { mode = "track" }
 "~/.config/mise/templates/zsh/zshenv.tmpl" = { mode = "track" }
+"~/.config/noctalia" = { mode = "track" }
 "~/.config/nvim" = { mode = "track" }
 "~/.config/nvim.rewrite" = { mode = "track" }
 "~/.config/opencode/agents" = { mode = "track" }
