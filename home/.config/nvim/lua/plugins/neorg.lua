@@ -83,9 +83,11 @@ local M = {}
 M.indentexpr = function()
   local buf = vim.api.nvim_get_current_buf()
   local line = vim.v.lnum - 1
+  local text = vim.api.nvim_buf_get_lines(buf, line, line + 1, false)[1] or ""
   local ok, parser = pcall(vim.treesitter.get_parser, buf, "norg")
   if ok and parser then
-    local lang = parser:language_for_range({ line, 0, line, 0 })
+    parser:parse(true) -- injections must exist before the range lookup
+    local lang = parser:language_for_range({ line, #text, line, #text })
     if lang and lang:lang() ~= "norg" then
       return require("nvim-treesitter").indentexpr()
     end
@@ -93,10 +95,11 @@ M.indentexpr = function()
   return require("neorg").modules.get_module("core.esupports.indent").indentexpr(buf, line)
 end
 
--- Registered after neorg setup, so this runs after Neorg's own BufEnter indentexpr.
+-- FileType matches the filetype "norg"; BufEnter matches the file pattern. Both are
+-- registered after neorg setup, so this wrapper runs after Neorg's own BufEnter indentexpr.
 vim.api.nvim_create_autocmd({ "FileType", "BufEnter" }, {
   group = vim.api.nvim_create_augroup("neorg_indent_wrapper", { clear = true }),
-  pattern = "*.norg",
+  pattern = { "norg", "*.norg" },
   callback = function(ev)
     vim.bo[ev.buf].indentexpr = "v:lua.require'plugins.neorg'.indentexpr()"
   end,
