@@ -1,0 +1,19 @@
+# Ready-to-enable Noctalia hook for the btop Catppuccin theme sync.
+#
+# NOT ACTIVE. Nothing in this file is loaded by Noctalia until it is linked into
+# ~/.config/noctalia (see btop/README.md). Do not install it on a machine without an
+# active Noctalia configuration (for example this WSL machine).
+#
+# Noctalia loads any *.toml file in its config directory. If your Noctalia config
+# already defines a theme_mode_changed hook, do not add a second [hooks] table;
+# merge this command into the existing list instead, e.g.
+#   [hooks]
+#   theme_mode_changed = ["existing-command", 'zsh -f "${XDG_CONFIG_HOME:-$HOME/.config}/btop/theme-sync.sh" "$NOCTALIA_THEME_MODE"']
+#
+# NOCTALIA_THEME_MODE is set by Noctalia to "dark" or "light". The single-quoted TOML
+# string keeps $NOCTALIA_THEME_MODE and the XDG expansion for the shell at run time.
+# The hook passes only the explicit mode; the wrapper still re-detects the terminal
+# on each btop launch.
+
+[hooks]
+theme_mode_changed = 'zsh -f "${XDG_CONFIG_HOME:-$HOME/.config}/btop/theme-sync.sh" "$NOCTALIA_THEME_MODE"'
