@@ -45,4 +45,5 @@ fi
 
 
 [dotfiles]
+"~/.config/hyprmoncfg" = { mode = "track", exclude = ["display-fallbacks.json"] }
 "~/.config/uwsm" = { mode = "track" }
