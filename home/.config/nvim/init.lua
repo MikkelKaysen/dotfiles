@@ -27,11 +27,15 @@ require("plugins.ui.misc")
 -- git: neogit + git worktrees (wrappers for the <leader>g maps in config/keymaps.lua)
 require("plugins.git")
 
+-- mason first: its setup() registers the registry sources that
+-- util/treesitter.lua needs to install the tree-sitter CLI, and puts the
+-- mason bin dir on $PATH.
+require("plugins.lsp.mason")
+
 require("plugins.treesitter")
 require("plugins.completion")
 
--- lsp: mason (tool binaries + server packages) → core → per-language
-require("plugins.lsp.mason")
+-- lsp: core → per-language
 require("plugins.lsp.lsp")
 require("plugins.lsp.languages")
 
