@@ -1,12 +1,10 @@
 -- Workspace rules wiki https://wiki.hypr.land/Configuring/Basics/Workspace-Rules/
--- Add your workspace rules here. Increment the workspace number as you go. Do not have duplicate workspaces.
+--
+-- Numbered workspaces are planned by hyprmoncfg, not here. The active profile
+-- ("docked": strategy sequential, group size 3) generates 1-3 on eDP-1 and
+-- 4-6 on DP-4 into ~/.config/hypr/hyprmoncfg-monitors.lua, which loads last and
+-- therefore wins. Change them in the `hyprmoncfg` TUI (tab 2, Workspaces) or by
+-- re-saving the profile - never by adding hl.workspace_rule calls here.
+--
+-- Named workspaces are not part of hyprmoncfg's plan, so this one stays ours.
 hl.workspace_rule({ workspace = "name:gaming", monitor = PRIMARY_MONITOR, default = true })
-hl.workspace_rule({ workspace = "1", monitor = MONITOR1, default = true, persistent = true })
-hl.workspace_rule({ workspace = "2", monitor = MONITOR1, default = true, persistent = true })
-hl.workspace_rule({ workspace = "3", monitor = MONITOR1, default = true, persistent = true })
--- hl.workspace_rule({ workspace = "4", monitor = MONITOR2, default = true, persistent = true })
--- hl.workspace_rule({ workspace = "5", monitor = MONITOR2, default = true, persistent = true })
--- hl.workspace_rule({ workspace = "6", monitor = MONITOR2, default = true, persistent = true })
-
--- For other layouts such as scrolling, see example below
--- hl.workspace_rule({ workspace = "1", monitor = MONITOR1, default = true, persistent = true, layout = "scrolling" })
