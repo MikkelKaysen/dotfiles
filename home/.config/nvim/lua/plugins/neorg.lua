@@ -1,6 +1,7 @@
 -- ---------------------------------------------------------------------------
 -- Neorg notes (personal + work workspaces) in ~/code/personal/notes.neorg.
--- Requires the norg/norg_meta parsers registered in plugins/treesitter.lua.
+-- Requires the norg parser (built by util/norg_parser.lua, :NorgParserBuild) and the
+-- norg_meta parser (registered in plugins/treesitter.lua).
 -- Git sync lives in util/notes_sync.lua (:NotesSync, automatic on note save).
 -- Completion: none from neorg; blink.cmp is unchanged.
 -- ---------------------------------------------------------------------------
