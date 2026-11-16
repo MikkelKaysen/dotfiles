@@ -154,8 +154,13 @@ end
 -- Missing targets (deletions) are fine when their existing ancestors are real directories.
 ---@return boolean, string?
 local function safe_rel_path(rel)
-  if rel:sub(1, 1) == "/" or rel:find("%.%.") or rel:find("\\", 1, true) then
+  if rel:sub(1, 1) == "/" or rel:find("\\", 1, true) then
     return false, "unsafe path"
+  end
+  for _, part in ipairs(vim.split(rel, "/", { plain = true })) do
+    if part == "" or part == "." or part == ".." then
+      return false, "unsafe path component"
+    end
   end
   if not (rel:match("^personal/.+%.norg$") or rel:match("^work/.+%.norg$")) then
     return false, "path outside personal/ or work/ .norg files"
