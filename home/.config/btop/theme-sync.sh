@@ -33,7 +33,7 @@ typeset -g stdin_stdout_tty=0
 _btop_osc11_mode() {
   emulate -LR zsh
   local LC_ALL=C
-  local fd ch buf="" r g b w re_body bel=$'\a' st=$'\e\\'
+  local ch buf="" r g b w re_body bel=$'\a' st=$'\e\\'
   local -F deadline t lum rv gv bv scale
   REPLY_MODE=""
 
@@ -47,24 +47,20 @@ _btop_osc11_mode() {
   # Do not consume pending keyboard input.
   zselect -t 0 -r 0 && return 1
 
-  # Group-scoped redirect so the stderr redirect does not persist for the shell.
-  { exec {fd}<>/dev/tty } 2>/dev/null || return 1
-  {
-    print -n -u $fd -- $'\e]11;?\a'
-    deadline=$(( EPOCHREALTIME + 0.3 ))
-    while true; do
-      t=$(( deadline - EPOCHREALTIME ))
-      (( t > 0 )) || break
-      read -r -s -k1 -t $t -u $fd ch || break
-      buf+=$ch
-      (( ${#buf} <= 128 )) || break
-      if [[ $buf == *"$bel" || $buf == *"$st" ]]; then
-        break
-      fi
-    done
-  } always {
-    exec {fd}>&-
-  }
+  # Command-scoped redirections only: the query goes to /dev/tty, and stderr is
+  # discarded for this print alone.
+  print -rn -- $'\e]11;?\a' 2>/dev/null >/dev/tty || return 1
+  deadline=$(( EPOCHREALTIME + 0.3 ))
+  while true; do
+    t=$(( deadline - EPOCHREALTIME ))
+    (( t > 0 )) || break
+    read -r -s -k1 -t $t ch || break
+    buf+=$ch
+    (( ${#buf} <= 128 )) || break
+    if [[ $buf == *"$bel" || $buf == *"$st" ]]; then
+      break
+    fi
+  done
 
   # Strip the terminator, then require the exact reply shape.
   if [[ $buf == *"$bel" ]]; then
