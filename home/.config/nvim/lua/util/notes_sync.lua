@@ -12,7 +12,7 @@ local M = {}
 
 local uv = vim.uv
 
-local COMMIT_MESSAGE = "__NOTES_SYNC_COMMIT_MESSAGE__" -- placeholder until the delegated message is wired in
+local COMMIT_MESSAGE = "🔧 chore(sync): save note updates"
 local ALLOWED_STATUS = { ["??"] = true, [" M"] = true, [" D"] = true }
 local IN_PROGRESS = { "MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "rebase-merge", "rebase-apply", "index.lock" }
 local REPO_ENV = { "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR" }
@@ -503,11 +503,6 @@ end
 ---@param kind "auto"|"manual"
 function M.run(kind)
   if not cfg.ready then
-    return
-  end
-  -- TODO: replace COMMIT_MESSAGE with the delegated commit-message text before enabling sync.
-  if COMMIT_MESSAGE == "__NOTES_SYNC_COMMIT_MESSAGE__" then
-    notify("setup unfinished: commit message placeholder still set; sync disabled (no git run)", vim.log.levels.WARN)
     return
   end
   if st.busy then
