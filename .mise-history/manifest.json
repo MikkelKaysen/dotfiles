@@ -2,6 +2,12 @@
   "format": 1,
   "enrollment": [
     {
+      "path": "config/config.desktop.toml",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "config/config.linux.toml",
       "autosave": true,
       "encrypt": false,

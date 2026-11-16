@@ -32,6 +32,7 @@ mode = "0755"
 "~/.config/git/default/core" = { source = "git/default/core", mode = "copy" }
 "~/.config/git/default/user" = { source = "git/default/user", mode = "copy", permissions = "0644" }
 "~/.config/git/hooks" = { mode = "track" }
+"~/.config/mise/config.desktop.toml" = { mode = "track" }
 "~/.config/mise/config.linux.toml" = { mode = "track" }
 "~/.config/mise/config.macos.toml" = { mode = "track" }
 "~/.config/mise/config.minds.toml" = { mode = "track" }
