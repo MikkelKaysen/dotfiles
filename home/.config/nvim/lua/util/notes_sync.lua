@@ -239,10 +239,9 @@ local function finish(ctx, ok, step, detail)
   end
 
   -- Reload only unmodified notes buffers; never force-reload.
-  local prefix = cfg.root .. "/"
   for _, b in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_is_loaded(b) and not vim.bo[b].modified then
-      if vim.api.nvim_buf_get_name(b):sub(1, #prefix) == prefix then
+      if under_root(canonical(vim.api.nvim_buf_get_name(b))) then
         vim.api.nvim_buf_call(b, function()
           vim.cmd("silent! checktime")
         end)
