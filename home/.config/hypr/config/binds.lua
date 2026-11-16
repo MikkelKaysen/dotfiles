@@ -148,6 +148,9 @@ hl.bind(mainMod .. " + " .. digitCode(1), hl.dsp.focus({ monitor = MONITOR1 }), 
 hl.bind(mainMod .. " + " .. digitCode(2), hl.dsp.focus({ monitor = MONITOR2 }), { description = "Focus display 2" })
 hl.bind(mainMod .. " + " .. digitCode(3), hl.dsp.focus({ monitor = MONITOR3 }), { description = "Focus display 3" })
 
+-- Monitor layout editor
+hl.bind(mainMod .. " + ALT + M", hl.dsp.exec_cmd(launchPrefix .. TERMINAL .. " -e hyprmoncfg"), { description = "Monitor layout" })
+
 -- Focus on workspace number
 -- Absolute
 for i = 1, NUM_WPM do
