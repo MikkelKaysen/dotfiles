@@ -16,6 +16,8 @@ local COMMIT_MESSAGE = "__NOTES_SYNC_COMMIT_MESSAGE__" -- placeholder until the 
 local ALLOWED_STATUS = { ["??"] = true, [" M"] = true, [" D"] = true }
 local IN_PROGRESS = { "MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD", "rebase-merge", "rebase-apply", "index.lock" }
 local REPO_ENV = { "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR" }
+-- Step failure detail meaning "unsaved buffers: stop without pausing".
+local DEFER = "defer"
 
 local cfg = { root = nil, expected_remote = nil, debounce_ms = 5000, timeout_ms = 120000, ready = false }
 local st = { busy = false, queued = false, paused = false, deferred = false, initial_done = false, timer = nil }
@@ -217,12 +219,12 @@ local function finish(ctx, ok, step, detail)
   end
   st.busy = false
 
-  if ok and ctx.skipped then
-    st.deferred = true
-    notify(ctx.skipped .. "; changes stay local until the next sync", vim.log.levels.WARN)
-  elseif ok then
+  if ok then
     st.deferred = false
     notify(ctx.summary or "sync complete")
+  elseif detail == DEFER then
+    st.deferred = true
+    notify("unsaved notes buffers; sync deferred until saved (no pause)", vim.log.levels.WARN)
   elseif ctx.lock_refused then
     notify(detail or "busy", vim.log.levels.WARN)
   else
