@@ -2,19 +2,18 @@
 # Select the Catppuccin btop theme (Mocha = dark, Latte = light) for the next btop launch.
 #
 # Usage: theme-sync.sh [dark|light|true|false|1|0]   (case-insensitive; default: auto)
-#   dark/true/1  -> catppuccin_mocha.theme
-#   light/false/0 -> catppuccin_latte.theme
+#   dark/true/1    -> catppuccin_mocha.theme
+#   light/false/0  -> catppuccin_latte.theme
 #   anything else (or no argument) -> auto detection:
 #     1. terminal background via OSC 11 (only when stdin and stdout are a tty)
 #     2. OS appearance: macOS defaults, WSL registry, Linux gsettings
-#        (optional legacy Noctalia settings.json via jq)
+#        (legacy Noctalia settings.json via optional jq)
 #     3. unknown -> dark
 #
 # Writes themes/catppuccin.theme as a symlink to the chosen theme. Prints nothing
 # on success; errors go to stderr. Intended to run as `zsh -f` from the btop wrapper.
 
 emulate -LR zsh
-setopt null_glob
 
 zmodload zsh/datetime || return 1
 zmodload zsh/zselect || return 1
@@ -33,8 +32,9 @@ typeset -g stdin_stdout_tty=0
 # Sets REPLY_MODE to dark|light on success; returns non-zero otherwise.
 _btop_osc11_mode() {
   emulate -LR zsh
-  local fd buf="" ch r g b w t deadline re_body
-  local -a m
+  local LC_ALL=C
+  local fd ch buf="" r g b w re_body
+  local -F deadline t lum rv gv bv scale
   REPLY_MODE=""
 
   # Only query a real terminal that understands OSC 11 (gate captured at entry).
@@ -47,7 +47,8 @@ _btop_osc11_mode() {
   # Do not consume pending keyboard input.
   zselect -t 0 -r 0 && return 1
 
-  exec {fd}<>/dev/tty 2>/dev/null || return 1
+  # Group-scoped redirect so the stderr redirect does not persist for the shell.
+  { exec {fd}<>/dev/tty } 2>/dev/null || return 1
   {
     print -n -u $fd -- $'\e]11;?\a'
     deadline=$(( EPOCHREALTIME + 0.3 ))
@@ -77,17 +78,25 @@ _btop_osc11_mode() {
   [[ $buf =~ $re_body ]] || return 1
   r=${match[1]} g=${match[2]} b=${match[3]}
 
-  # Weighted brightness (0..1) per component width.
-  local -F lum rv gv bv scale
-  w=${#r}; scale=$(( 16 ** w - 1 )); (( rv = (16#$r) * 1.0 / scale ))
-  w=${#g}; scale=$(( 16 ** w - 1 )); (( gv = (16#$g) * 1.0 / scale ))
-  w=${#b}; scale=$(( 16 ** w - 1 )); (( bv = (16#$b) * 1.0 / scale ))
-  (( lum = 0.299 * rv + 0.587 * gv + 0.114 * bv ))
+  # Normalize each component to 0..1 by its hex width, then weight.
+  w=${#r}; scale=$(( 16 ** w - 1 )); rv=$(( (16#$r) * 1.0 / scale ))
+  w=${#g}; scale=$(( 16 ** w - 1 )); gv=$(( (16#$g) * 1.0 / scale ))
+  w=${#b}; scale=$(( 16 ** w - 1 )); bv=$(( (16#$b) * 1.0 / scale ))
+  lum=$(( 0.299 * rv + 0.587 * gv + 0.114 * bv ))
   if (( lum < 0.5 )); then REPLY_MODE=dark; else REPLY_MODE=light; fi
   return 0
 }
 
 # ---- OS appearance -----------------------------------------------------------
+
+# True when running under WSL (env markers, else kernel release contains microsoft).
+_btop_is_wsl() {
+  emulate -LR zsh
+  [[ -n ${WSL_DISTRO_NAME:-} || -n ${WSL_INTEROP:-} ]] && return 0
+  local k
+  k=$(uname -r 2>/dev/null)
+  [[ ${(L)k} == *microsoft* ]]
+}
 
 # Sets REPLY_MODE to dark|light on success; returns non-zero if unknown.
 _btop_os_mode() {
@@ -103,7 +112,7 @@ _btop_os_mode() {
     return 0
   fi
 
-  if [[ $(uname -r 2>/dev/null) == [Mm]icrosoft* ]] && (( $+commands[reg.exe] )); then
+  if _btop_is_wsl && (( $+commands[reg.exe] )); then
     out=$(reg.exe query 'HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize' /v AppsUseLightTheme 2>/dev/null)
     for line in ${(f)out}; do
       line=${line%$'\r'}
@@ -112,7 +121,7 @@ _btop_os_mode() {
         return 0
       fi
     done
-    return 1
+    # Registry query failed or unexpected output: fall through to Linux sources.
   fi
 
   # Legacy Noctalia settings.json (optional; requires jq).
@@ -142,7 +151,6 @@ _btop_os_mode() {
 _btop_pick_flavor() {
   emulate -LR zsh
   local arg=${(L)1} mode
-  REPLY_FLAVOR=mocha
   case $arg in
     dark|true|1) REPLY_FLAVOR=mocha; return 0 ;;
     light|false|0) REPLY_FLAVOR=latte; return 0 ;;
