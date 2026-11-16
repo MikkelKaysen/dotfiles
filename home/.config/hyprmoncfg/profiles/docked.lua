@@ -7,8 +7,10 @@ hl.monitor({
   output = "desc:Apple Computer Inc Color LCD",
   mode = "2880x1800@60.00",
   position = "0x0",
-  scale = 1.2,
+  scale = 1.25,
   vrr = 0,
+  bitdepth = 10,
+  cm = "auto",
   sdr_min_luminance = 0.2,
   sdr_max_luminance = 80,
 })
@@ -16,9 +18,11 @@ hl.monitor({
 hl.monitor({
   output = "desc:Dell Inc. DELL P2416D 07C5368H2DPL",
   mode = "2560x1440@59.95",
-  position = "2400x30",
+  position = "2304x-70",
   scale = 1,
   vrr = 0,
+  bitdepth = 10,
+  cm = "auto",
   sdr_min_luminance = 0.2,
   sdr_max_luminance = 80,
 })
@@ -33,7 +37,7 @@ if type(o) == "table" and type(o.workspaces) == "table" and type(o.workspaces.re
 
   -- The plan's persistent workspaces. Hyprland keeps one on the monitor its
   -- rule names and moves it back after a move (#123).
-  local persistent = { ["1"] = true, ["2"] = true, ["3"] = true }
+  local persistent = { ["1"] = true, ["4"] = true }
 
   local function action(expression, fn)
     o.bind_expressions[fn] = expression
@@ -91,8 +95,11 @@ if type(o) == "table" and type(o.workspaces) == "table" and type(o.workspaces.re
 end
 
 hl.workspace_rule({ workspace = "1", monitor = "desc:Apple Computer Inc Color LCD", default = true, persistent = true })
-hl.workspace_rule({ workspace = "2", monitor = "desc:Apple Computer Inc Color LCD", default = true, persistent = true })
-hl.workspace_rule({ workspace = "3", monitor = "desc:Apple Computer Inc Color LCD", default = true, persistent = true })
+hl.workspace_rule({ workspace = "2", monitor = "desc:Apple Computer Inc Color LCD" })
+hl.workspace_rule({ workspace = "3", monitor = "desc:Apple Computer Inc Color LCD" })
+hl.workspace_rule({ workspace = "4", monitor = "desc:Dell Inc. DELL P2416D 07C5368H2DPL", default = true, persistent = true })
+hl.workspace_rule({ workspace = "5", monitor = "desc:Dell Inc. DELL P2416D 07C5368H2DPL" })
+hl.workspace_rule({ workspace = "6", monitor = "desc:Dell Inc. DELL P2416D 07C5368H2DPL" })
 hl.workspace_rule({ workspace = "name:gaming", monitor = "desc:Apple Computer Inc Color LCD", default = true })
 
 -- Omarchy leaves GDK_SCALE to this file.

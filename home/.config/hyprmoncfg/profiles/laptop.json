@@ -1,0 +1,42 @@
+{
+  "name": "laptop",
+  "created_at": "2026-11-16T21:22:46.346288Z",
+  "updated_at": "2026-11-16T21:22:46.346288Z",
+  "outputs": [
+    {
+      "key": "apple computer inc|color lcd",
+      "match_key": "apple computer inc|color lcd",
+      "name": "eDP-1",
+      "description": "Apple Computer Inc Color LCD",
+      "make": "Apple Computer Inc",
+      "model": "Color LCD",
+      "enabled": true,
+      "mode": "2880x1800@60.00Hz",
+      "width": 2880,
+      "height": 1800,
+      "refresh": 60.001,
+      "x": 0,
+      "y": 0,
+      "scale": 1.2,
+      "transform": 0,
+      "bitdepth": 8,
+      "cm": "srgb",
+      "sdr_brightness": 1,
+      "sdr_saturation": 1,
+      "sdr_min_luminance": 0.2,
+      "sdr_max_luminance": 80,
+      "min_luminance": 0
+    }
+  ],
+  "workspaces": {
+    "enabled": true,
+    "strategy": "sequential",
+    "max_workspaces": 6,
+    "group_size": 3,
+    "monitor_order": [
+      "apple computer inc|color lcd"
+    ],
+    "rules": []
+  },
+  "exec": ""
+}
