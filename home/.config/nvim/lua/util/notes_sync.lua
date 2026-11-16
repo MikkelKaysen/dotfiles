@@ -39,23 +39,56 @@ local function short(s, n)
   return s
 end
 
+-- Canonical absolute path. Existing paths resolve through symlinks; new files resolve
+-- their nearest existing ancestor and append the rest. Aliases of the root compare equal.
+---@param path? string
+---@return string?
+local function canonical(path)
+  if not path or path == "" then
+    return nil
+  end
+  local p, tail = vim.fs.normalize(path), {}
+  while true do
+    local real = uv.fs_realpath(p)
+    if real then
+      if #tail == 0 then
+        return real
+      end
+      return real .. "/" .. table.concat(tail, "/")
+    end
+    local parent = vim.fs.dirname(p)
+    if not parent or parent == p then
+      return nil
+    end
+    table.insert(tail, 1, vim.fs.basename(p))
+    p = parent
+  end
+end
+
+-- True when a canonical path lies strictly under the notes root.
+---@param canon? string
+---@return boolean
+local function under_root(canon)
+  return canon ~= nil and canon:sub(1, #cfg.root + 1) == cfg.root .. "/"
+end
+
 ---@param path? string
 ---@return boolean
 local function in_scope(path)
-  if not (cfg.root and path and path:sub(1, #cfg.root + 1) == cfg.root .. "/") then
+  local canon = canonical(path)
+  if not under_root(canon) then
     return false
   end
-  local rel = path:sub(#cfg.root + 2)
+  local rel = canon:sub(#cfg.root + 2)
   return rel:match("^personal/.+%.norg$") ~= nil or rel:match("^work/.+%.norg$") ~= nil
 end
 
--- Any loaded, modified buffer under the notes root defers the run.
+-- Any loaded, modified buffer under the notes root (by canonical path) blocks the run.
 ---@return boolean
 local function buffers_modified()
-  local prefix = cfg.root .. "/"
   for _, b in ipairs(vim.api.nvim_list_bufs()) do
     if vim.api.nvim_buf_is_loaded(b) and vim.bo[b].modified then
-      if vim.api.nvim_buf_get_name(b):sub(1, #prefix) == prefix then
+      if under_root(canonical(vim.api.nvim_buf_get_name(b))) then
         return true
       end
     end
