@@ -122,7 +122,10 @@
       "path": "home/.config/hypr",
       "autosave": true,
       "encrypt": false,
-      "variants": []
+      "variants": [],
+      "exclude": [
+        "hyprmoncfg-monitors.lua"
+      ]
     },
     {
       "path": "home/.config/kanata/linux.kbd",

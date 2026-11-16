@@ -3,6 +3,7 @@
 
 [bootstrap.packages]
 "aur:kanata" = "latest"
+"aur:hyprmoncfg-bin" = "latest"
 "pacman:ghostty" = "latest"
 "pacman:ttf-firacode-nerd" = "latest"
 "pacman:zen-browser-bin" = "latest"
