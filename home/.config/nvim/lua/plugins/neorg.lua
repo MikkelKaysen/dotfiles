@@ -271,8 +271,7 @@ local function close_neorg_buffers()
 
   local destination = usable_non_neorg_buffer()
   if destination ~= nil then
-    local wins = vim.api.nvim_tabpage_list_wins(0)
-    for _, win in ipairs(wins) do
+    for _, win in ipairs(vim.api.nvim_list_wins()) do
       local buf = vim.api.nvim_win_get_buf(win)
       if vim.tbl_contains(neorg_buffers, buf) then
         vim.api.nvim_win_set_buf(win, destination)
