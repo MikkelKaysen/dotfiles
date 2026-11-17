@@ -103,11 +103,24 @@ vim.api.nvim_create_autocmd("FileType", {
       if not str or str == "" then
         return nil, nil
       end
-      local status, body = str:match("^%s*%(([ %sx%-%=%_%!%+%?])%)%s*(.*)$")
-      if status then
-        return status, body or ""
+      local status, body = str:match("^%s*%((.)%)%s*(.*)$")
+      if not status then
+        return nil, str
       end
-      return nil, str
+      local valid = {
+        [" "] = true,
+        x = true,
+        ["-"] = true,
+        ["="] = true,
+        ["_"] = true,
+        ["!"] = true,
+        ["+"] = true,
+        ["?"] = true,
+      }
+      if not valid[status] then
+        return nil, str
+      end
+      return status, body or ""
     end
 
     local function parse_norg_line(line)
