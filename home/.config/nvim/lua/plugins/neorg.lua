@@ -94,6 +94,10 @@ vim.api.nvim_create_autocmd("FileType", {
       return (s or ""):gsub("^%s+", ""):gsub("%s+$", "")
     end
 
+    local function normalize_space(s)
+      return trim((s or ""):gsub("%s+", " "))
+    end
+
     local function clamp_depth(depth)
       local n = tonumber(depth) or 1
       return math.max(1, math.min(6, n))
@@ -111,23 +115,7 @@ vim.api.nvim_create_autocmd("FileType", {
       if stars then
         parsed.kind = "heading"
         parsed.depth = clamp_depth(#stars)
-        parsed.body = trim(heading_body)
-        return parsed
-      end
-
-      local dashes, todo_token, body = text:match("^(-+)%s*(%([^)]*%))?%s*(.*)$")
-      if dashes then
-        local todo_status = todo_token and todo_token:match("^%((.)%)$")
-        if todo_status then
-          parsed.kind = "todo"
-          parsed.depth = clamp_depth(#dashes)
-          parsed.status = todo_status
-          parsed.body = trim(body)
-          return parsed
-        end
-        parsed.kind = "unordered"
-        parsed.depth = clamp_depth(#dashes)
-        parsed.body = trim(body)
+        parsed.body = normalize_space(heading_body)
         return parsed
       end
 
@@ -135,11 +123,29 @@ vim.api.nvim_create_autocmd("FileType", {
       if tildes then
         parsed.kind = "ordered"
         parsed.depth = clamp_depth(#tildes)
-        parsed.body = trim(ordered_body)
+        parsed.body = normalize_space(ordered_body)
         return parsed
       end
 
-      parsed.body = trim(text)
+      local dashes, rest_after = text:match("^(-+)(.*)$")
+      if dashes then
+        local todo_token, todo_body = rest_after:match("^%s*(%([^)]*%))%s*(.*)$")
+        if todo_token then
+          local status = todo_token:match("^%((.-)%)$")
+          parsed.kind = "todo"
+          parsed.depth = clamp_depth(#dashes)
+          parsed.status = (status and normalize_space(status)) or " "
+          parsed.body = normalize_space(todo_body)
+          return parsed
+        end
+
+        parsed.kind = "unordered"
+        parsed.depth = clamp_depth(#dashes)
+        parsed.body = normalize_space(rest_after)
+        return parsed
+      end
+
+      parsed.body = normalize_space(text)
       return parsed
     end
 
@@ -188,8 +194,14 @@ vim.api.nvim_create_autocmd("FileType", {
 
     local function toggle_norg_line(line, target)
       local parsed = parse_norg_line(line)
-      if target == "plain" or parsed.kind == target then
-        return parsed.indent .. parsed.body
+      local body = normalize_space(parsed.body)
+
+      if target == "plain" then
+        return parsed.indent .. body
+      end
+
+      if parsed.kind == target then
+        return parsed.indent .. body
       end
 
       local depth = parsed.kind == "plain" and 1 or clamp_depth(parsed.depth)
@@ -203,10 +215,10 @@ vim.api.nvim_create_autocmd("FileType", {
       elseif target == "todo" then
         prefix = string.rep("-", depth) .. " ( ) "
       else
-        return parsed.indent .. parsed.body
+        return parsed.indent .. body
       end
 
-      return parsed.indent .. prefix .. (parsed.body ~= "" and parsed.body or "")
+      return parsed.indent .. prefix .. body
     end
 
     local function apply_toggle_range(target, start_row, end_row)
