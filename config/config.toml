@@ -96,7 +96,6 @@ eza = "latest"
 uv = "latest"
 codegraph = "latest"
 playwright = "1.64.1"
-"cargo:abtop" = "latest"
 "npm:tokscale" = "latest"
 
 [settings]
