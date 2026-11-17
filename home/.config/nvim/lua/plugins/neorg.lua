@@ -101,24 +101,27 @@ vim.api.nvim_create_autocmd("FileType", {
 
     local function parse_norg_line(line)
       local indent, rest = (line or ""):match("^(%s*)(.*)$")
-      local parsed = { indent = indent or "", kind = "plain", depth = 1, body = "" }
-      if rest == "" then
+      local parsed = { indent = indent or "", kind = "plain", depth = 1, body = "", status = nil }
+      local text = rest or ""
+      if text == "" then
         return parsed
       end
 
-      local stars = rest:match("^(%*+)")
-      if stars and rest:sub(#stars + 1):match("^%s") then
+      local stars, heading_body = text:match("^(%*+)%s*(.*)$")
+      if stars then
         parsed.kind = "heading"
         parsed.depth = clamp_depth(#stars)
-        parsed.body = trim(rest:sub(#stars + 1))
+        parsed.body = trim(heading_body)
         return parsed
       end
 
-      local dashes, status, body = rest:match("^(-+)%s*(%([^)]*%))?%s*(.*)$")
+      local dashes, todo_token, body = text:match("^(-+)%s*(%([^)]*%))?%s*(.*)$")
       if dashes then
-        if status then
+        local todo_status = todo_token and todo_token:match("^%((.)%)$")
+        if todo_status then
           parsed.kind = "todo"
           parsed.depth = clamp_depth(#dashes)
+          parsed.status = todo_status
           parsed.body = trim(body)
           return parsed
         end
@@ -128,15 +131,15 @@ vim.api.nvim_create_autocmd("FileType", {
         return parsed
       end
 
-      local tildes = rest:match("^(~+)")
+      local tildes, ordered_body = text:match("^(~+)%s*(.*)$")
       if tildes then
         parsed.kind = "ordered"
         parsed.depth = clamp_depth(#tildes)
-        parsed.body = trim(rest:sub(#tildes + 1))
+        parsed.body = trim(ordered_body)
         return parsed
       end
 
-      parsed.body = trim(rest)
+      parsed.body = trim(text)
       return parsed
     end
 
