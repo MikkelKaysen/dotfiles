@@ -282,7 +282,7 @@ local function close_neorg_buffers()
 
   if destination == nil then
     vim.cmd("only")
-    if Snacks.dashboard then
+    if Snacks and Snacks.dashboard then
       Snacks.dashboard()
     end
   end
