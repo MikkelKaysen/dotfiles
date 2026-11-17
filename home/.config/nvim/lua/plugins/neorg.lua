@@ -194,6 +194,100 @@ vim.api.nvim_create_autocmd({ "FileType", "BufEnter" }, {
 
 require("which-key").add({ { "<leader>j", group = "neorg" } }, { notify = false })
 
+local function is_neorg_buffer(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return false
+  end
+  local name = vim.api.nvim_buf_get_name(buf)
+  return vim.bo[buf].filetype == "norg" or name:match("%.norg$") ~= nil
+end
+
+local function usable_non_neorg_buffer()
+  local alt = vim.fn.bufnr("#")
+  if alt ~= -1 and vim.api.nvim_buf_is_valid(alt) and not is_neorg_buffer(alt) then
+    return alt
+  end
+
+  for _, info in ipairs(vim.fn.getbufinfo({ buflisted = 1 })) do
+    local buf = info.bufnr
+    if vim.api.nvim_buf_is_valid(buf) and not is_neorg_buffer(buf) then
+      return buf
+    end
+  end
+
+  return nil
+end
+
+local function close_neorg_buffers()
+  local neorg_buffers = {}
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if is_neorg_buffer(buf) then
+      neorg_buffers[#neorg_buffers + 1] = buf
+    end
+  end
+
+  if #neorg_buffers == 0 then
+    return
+  end
+
+  local saves = {}
+  local failures = {}
+  for _, buf in ipairs(neorg_buffers) do
+    if vim.bo[buf].modified then
+      local name = vim.api.nvim_buf_get_name(buf)
+      local ok, err = pcall(vim.api.nvim_buf_call, buf, function()
+        vim.cmd("update")
+      end)
+      if not ok or vim.bo[buf].modified then
+        failures[#failures + 1] = string.format("%s: %s", name ~= "" and name or ("buf #%d"):format(buf), err or "save failed")
+      else
+        saves[#saves + 1] = buf
+      end
+    else
+      saves[#saves + 1] = buf
+    end
+  end
+
+  local destination = usable_non_neorg_buffer()
+  if destination ~= nil then
+    local wins = vim.api.nvim_tabpage_list_wins(0)
+    for _, win in ipairs(wins) do
+      local buf = vim.api.nvim_win_get_buf(win)
+      if vim.tbl_contains(neorg_buffers, buf) then
+        vim.api.nvim_win_set_buf(win, destination)
+      end
+    end
+  end
+
+  local closing = {}
+  for _, buf in ipairs(saves) do
+    if vim.api.nvim_buf_is_valid(buf) then
+      closing[#closing + 1] = buf
+    end
+  end
+
+  for _, buf in ipairs(closing) do
+    local ok, err = pcall(vim.api.nvim_buf_delete, buf, { force = false })
+    if not ok then
+      failures[#failures + 1] = string.format("%s: %s", vim.api.nvim_buf_get_name(buf), err or "close failed")
+    end
+  end
+
+  if #failures > 0 then
+    vim.notify(("Failed to save or close Neorg buffers:\n- %s"):format(table.concat(failures, "\n- ")), vim.log.levels.ERROR, {
+      title = "Neorg close",
+    })
+    return
+  end
+
+  if destination == nil then
+    vim.cmd("only")
+    if Snacks.dashboard then
+      Snacks.dashboard()
+    end
+  end
+end
+
 local function map(lhs, rhs, desc)
   vim.keymap.set("n", "<leader>j" .. lhs, rhs, { desc = desc, silent = true })
 end
@@ -203,7 +297,7 @@ map("w", function() vim.cmd("Neorg workspace work") end, "Workspace: work")
 map("i", function() vim.cmd("Neorg index") end, "Workspace index")
 map("j", function() vim.cmd("Neorg journal today") end, "Journal today")
 map("n", function() dirman().new_note() end, "New note (current workspace)")
-map("r", function() vim.cmd("Neorg return") end, "Return from neorg")
+map("q", close_neorg_buffers, "Close Neorg buffers")
 map("s", function() vim.cmd("NotesSync") end, "Sync notes repo")
 map("f", function()
   Snacks.picker.files({ cwd = WORKSPACES[current_workspace()] })
