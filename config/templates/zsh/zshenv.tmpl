@@ -19,8 +19,10 @@ eval "$(mise activate zsh --shims)"
 : ${VISUAL="nvim"}
 : ${ITM_LLM_GW_URL="https://llm-gw.itmindsinternal.dk/v1"}
 : ${ITM_LLM_GW_KEY="{{ secret(name="itm_llm_gw") }}"}
+[[ -n $WT_SESSION ]] && : ${COLORTERM="truecolor"}
 
 export EDITOR
 export VISUAL
 export ITM_LLM_GW_URL
 export ITM_LLM_GW_KEY
+export COLORTERM
