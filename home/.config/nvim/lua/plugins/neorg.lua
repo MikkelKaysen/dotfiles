@@ -81,12 +81,138 @@ vim.api.nvim_create_autocmd("FileType", {
         { "<localleader>t", group = "todo" },
         { "<localleader>l", group = "list" },
         { "<localleader>i", group = "insert" },
+        { "<localleader>m", group = "toggle" },
       },
       { buffer = ev.buf }
     )
 
     local map = function(mode, lhs, rhs, desc)
       vim.keymap.set(mode, lhs, rhs, { buffer = ev.buf, desc = desc, silent = true })
+    end
+
+    local function trim(s)
+      return (s or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    end
+
+    local function clamp_depth(depth)
+      local n = tonumber(depth) or 1
+      return math.max(1, math.min(6, n))
+    end
+
+    local function parse_norg_line(line)
+      local indent, rest = (line or ""):match("^(%s*)(.*)$")
+      local parsed = { indent = indent or "", kind = "plain", depth = 1, body = "" }
+      if rest == "" then
+        return parsed
+      end
+
+      local stars = rest:match("^(%*+)")
+      if stars and rest:sub(#stars + 1):match("^%s") then
+        parsed.kind = "heading"
+        parsed.depth = clamp_depth(#stars)
+        parsed.body = trim(rest:sub(#stars + 1))
+        return parsed
+      end
+
+      local dashes, status, body = rest:match("^(-+)%s*(%([^)]*%))?%s*(.*)$")
+      if dashes then
+        if status then
+          parsed.kind = "todo"
+          parsed.depth = clamp_depth(#dashes)
+          parsed.body = trim(body)
+          return parsed
+        end
+        parsed.kind = "unordered"
+        parsed.depth = clamp_depth(#dashes)
+        parsed.body = trim(body)
+        return parsed
+      end
+
+      local tildes = rest:match("^(~+)")
+      if tildes then
+        parsed.kind = "ordered"
+        parsed.depth = clamp_depth(#tildes)
+        parsed.body = trim(rest:sub(#tildes + 1))
+        return parsed
+      end
+
+      parsed.body = trim(rest)
+      return parsed
+    end
+
+    local function nearest_heading_level()
+      local row = vim.api.nvim_win_get_cursor(0)[1]
+      for line = row, 1, -1 do
+        local text = vim.api.nvim_buf_get_lines(0, line - 1, line, false)[1] or ""
+        local stars = text:match("^%s*(%*+)")
+        if stars then
+          return clamp_depth(#stars)
+        end
+      end
+      return 1
+    end
+
+    local function current_list_depth()
+      local row = vim.api.nvim_win_get_cursor(0)[1]
+      local text = vim.api.nvim_buf_get_lines(0, row - 1, row, false)[1] or ""
+      local parsed = parse_norg_line(text)
+      if parsed.kind == "ordered" or parsed.kind == "unordered" or parsed.kind == "todo" then
+        return parsed.depth
+      end
+      return 1
+    end
+
+    local function insert_marker_line(kind)
+      local row = vim.api.nvim_win_get_cursor(0)[1]
+      local line = vim.api.nvim_buf_get_lines(0, row - 1, row, false)[1] or ""
+      local indent = line:match("^(%s*)") or ""
+      local depth = kind == "heading" and nearest_heading_level() or current_list_depth()
+      local prefix
+      if kind == "heading" then
+        prefix = string.rep("*", clamp_depth(depth)) .. " "
+      elseif kind == "unordered" then
+        prefix = string.rep("-", clamp_depth(depth)) .. " "
+      elseif kind == "ordered" then
+        prefix = string.rep("~", clamp_depth(depth)) .. " "
+      else
+        prefix = string.rep("-", clamp_depth(depth)) .. " ( ) "
+      end
+      local new_line = indent .. prefix
+      vim.api.nvim_buf_set_lines(0, row, row, false, { new_line })
+      vim.api.nvim_win_set_cursor(0, { row + 1, #new_line })
+      vim.cmd("startinsert")
+    end
+
+    local function toggle_norg_line(line, target)
+      local parsed = parse_norg_line(line)
+      if target == "plain" or parsed.kind == target then
+        return parsed.indent .. parsed.body
+      end
+
+      local depth = parsed.kind == "plain" and 1 or clamp_depth(parsed.depth)
+      local prefix
+      if target == "heading" then
+        prefix = string.rep("*", depth) .. " "
+      elseif target == "unordered" then
+        prefix = string.rep("-", depth) .. " "
+      elseif target == "ordered" then
+        prefix = string.rep("~", depth) .. " "
+      elseif target == "todo" then
+        prefix = string.rep("-", depth) .. " ( ) "
+      else
+        return parsed.indent .. parsed.body
+      end
+
+      return parsed.indent .. prefix .. (parsed.body ~= "" and parsed.body or "")
+    end
+
+    local function apply_toggle_range(target, start_row, end_row)
+      local rows = {}
+      for row = start_row, end_row do
+        local line = vim.api.nvim_buf_get_lines(0, row - 1, row, false)[1] or ""
+        rows[#rows + 1] = toggle_norg_line(line, target)
+      end
+      vim.api.nvim_buf_set_lines(0, start_row - 1, end_row, false, rows)
     end
 
     map("n", "<LocalLeader>tu", "<Plug>(neorg.qol.todo-items.todo.task-undone)", "[neorg] Mark as Undone")
@@ -107,9 +233,50 @@ vim.api.nvim_create_autocmd("FileType", {
     map("n", "<LocalLeader>id", "<Plug>(neorg.tempus.insert-date)", "[neorg] Insert Date")
     map("n", "<LocalLeader>nn", "<Plug>(neorg.dirman.new-note)", "[neorg] Create New Note")
     map("n", "<LocalLeader>cm", "<Plug>(neorg.looking-glass.magnify-code-block)", "[neorg] Magnify Code Block")
+    map("n", "<LocalLeader>ih", function() insert_marker_line("heading") end, "[neorg] Insert heading below")
+    map("n", "<LocalLeader>il", function() insert_marker_line("unordered") end, "[neorg] Insert list below")
+    map("n", "<LocalLeader>io", function() insert_marker_line("ordered") end, "[neorg] Insert ordered list below")
+    map("n", "<LocalLeader>it", function() insert_marker_line("todo") end, "[neorg] Insert todo below")
+    map("n", "<LocalLeader>mh", function()
+      local row = vim.api.nvim_win_get_cursor(0)[1]
+      local line = vim.api.nvim_buf_get_lines(0, row - 1, row, false)[1] or ""
+      vim.api.nvim_buf_set_lines(0, row - 1, row, false, { toggle_norg_line(line, "heading") })
+    end, "[neorg] Toggle Heading")
+    map("n", "<LocalLeader>ml", function()
+      local row = vim.api.nvim_win_get_cursor(0)[1]
+      local line = vim.api.nvim_buf_get_lines(0, row - 1, row, false)[1] or ""
+      vim.api.nvim_buf_set_lines(0, row - 1, row, false, { toggle_norg_line(line, "unordered") })
+    end, "[neorg] Toggle Unordered List")
+    map("n", "<LocalLeader>mo", function()
+      local row = vim.api.nvim_win_get_cursor(0)[1]
+      local line = vim.api.nvim_buf_get_lines(0, row - 1, row, false)[1] or ""
+      vim.api.nvim_buf_set_lines(0, row - 1, row, false, { toggle_norg_line(line, "ordered") })
+    end, "[neorg] Toggle Ordered List")
+    map("n", "<LocalLeader>mt", function()
+      local row = vim.api.nvim_win_get_cursor(0)[1]
+      local line = vim.api.nvim_buf_get_lines(0, row - 1, row, false)[1] or ""
+      vim.api.nvim_buf_set_lines(0, row - 1, row, false, { toggle_norg_line(line, "todo") })
+    end, "[neorg] Toggle Todo")
+    map("v", "<LocalLeader>ml", function()
+      local start_row = vim.fn.line("'<")
+      local end_row = vim.fn.line("'>")
+      apply_toggle_range("unordered", start_row, end_row)
+    end, "[neorg] Toggle Unordered List (Range)")
+    map("v", "<LocalLeader>mo", function()
+      local start_row = vim.fn.line("'<")
+      local end_row = vim.fn.line("'>")
+      apply_toggle_range("ordered", start_row, end_row)
+    end, "[neorg] Toggle Ordered List (Range)")
+    map("v", "<LocalLeader>mt", function()
+      local start_row = vim.fn.line("'<")
+      local end_row = vim.fn.line("'>")
+      apply_toggle_range("todo", start_row, end_row)
+    end, "[neorg] Toggle Todo (Range)")
     map("n", "<LocalLeader>?", function()
       require("which-key").show({ keys = "<localleader>", loop = true })
     end, "[neorg] Browse keymaps")
+    map("i", "<M-CR>", "<Plug>(neorg.itero.next-iteration)", "[neorg] Continue Object")
+    map("i", "<M-d>", "<Plug>(neorg.tempus.insert-date.insert-mode)", "[neorg] Insert Date")
     map("i", "<C-t>", "<Plug>(neorg.promo.promote)", "[neorg] Promote Object (Recursively)")
     map("i", "<C-d>", "<Plug>(neorg.promo.demote)", "[neorg] Demote Object (Recursively)")
     map("v", ">", "<Plug>(neorg.promo.promote.range)", "[neorg] Promote Objects in Range")
