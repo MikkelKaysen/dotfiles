@@ -1,0 +1,61 @@
+;; CapsLock -> Left Ctrl, plus sunaku-style home-row mods.
+;; Applies to every keyboard EXCEPT the MoErgo Glove80, which keeps its own
+;; ZMK layers / home-row mods untouched.
+;;
+;; Gaming mode: tap ScrollLock (slck) toggles the `gaming` layer.
+;; In `gaming` the home row emits plain letters (no mods) and CapsLock
+;; still emits Left Ctrl. Tap ScrollLock again to return to base.
+;;
+;; Timings mirror github.com/sunaku/glove80-keymaps @ v52, DIFFICULTY_LEVEL 0:
+;;   TAPPING_RESOLUTION 150 -> index 180 / middle 210 / ring 240 / pinky 270 ms
+;;   quick-tap-ms 300      -> 1st arg of tap-hold-tap-keys ($tap-repress-timeout)
+;;   require-prior-idle 150
+;;   flavor tap-preferred  -> tap-hold-tap-keys only resolves hold on timeout
+;;   ENFORCE_BILATERAL     -> a same-hand key forces a tap (the $lhs/$rhs lists)
+;;
+;; Linux home row order (pinky -> index): Super, Alt, Ctrl, Shift
+
+(defcfg
+  process-unmapped-keys yes
+  ;; Device names must match EXACTLY (no substring matching).
+  ;; Names taken from `kanata --list`; the MoErgo passes through untouched.
+  linux-dev-names-exclude (
+    "Glove80 Keyboard"
+    "Glove80"
+  )
+)
+
+(defsrc
+  caps  a  s  d  f   j  k  l  scln  slck
+)
+
+(defvar
+  lhs ( grv 1 2 3 4 5 tab q w e r t a s d f g z x c v b )
+  rhs ( 6 7 8 9 0 y u i o p h j k l scln n m , . / )
+)
+
+(deflayer base
+  lctl
+
+  (tap-hold-tap-keys 300 270 a    lmet $lhs (require-prior-idle 150))
+  (tap-hold-tap-keys 300 240 s    lalt $lhs (require-prior-idle 150))
+  (tap-hold-tap-keys 300 210 d    lctl $lhs (require-prior-idle 150))
+  (tap-hold-tap-keys 300 180 f    lsft $lhs (require-prior-idle 150))
+
+  (tap-hold-tap-keys 300 180 j    rsft $rhs (require-prior-idle 150))
+  (tap-hold-tap-keys 300 210 k    rctl $rhs (require-prior-idle 150))
+  (tap-hold-tap-keys 300 240 l    ralt $rhs (require-prior-idle 150))
+  (tap-hold-tap-keys 300 270 scln rmet $rhs (require-prior-idle 150))
+
+  (layer-toggle gaming)
+)
+
+;; Gaming mode: ScrollLock toggles this layer on/off.
+;; Home-row mods are disabled (plain letters); CapsLock still emits Left Ctrl.
+(deflayer gaming
+  lctl
+
+  a  s  d  f   j  k  l  scln
+
+  (layer-toggle gaming)
+)

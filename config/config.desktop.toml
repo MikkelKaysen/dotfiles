@@ -1,0 +1,49 @@
+# Desktop-only setup. Selected by the `desktop` config environment, which
+# miserc.local.toml enables on Linux machines that are not WSL.
+
+[bootstrap.packages]
+"aur:kanata" = "latest"
+"aur:hyprmoncfg-bin" = "latest"
+"pacman:ghostty" = "latest"
+"pacman:ttf-firacode-nerd" = "latest"
+"pacman:zen-browser-bin" = "latest"
+
+[bootstrap.groups.uinput]
+system = true
+
+# Written before packages so the post-packages hook below can reload udev.
+[bootstrap.files."/etc/udev/rules.d/99-input.rules"]
+phase = "pre-packages"
+content = '''KERNEL=="uinput", MODE="0660", GROUP="uinput", OPTIONS+="static_node=uinput"
+'''
+owner = "root"
+group = "root"
+mode = "0644"
+
+[bootstrap.linux.systemd.units.kanata]
+description = "Kanata keyboard remapper"
+exec_start = "/usr/bin/kanata --cfg %h/.config/kanata/linux.kbd --no-wait"
+restart = "on-failure"
+restart_sec = "3"
+
+# Account keys are not templated, so grant membership imperatively instead of
+# hardcoding a user name. Both steps are no-ops once the machine is set up.
+[bootstrap.hooks.post-packages]
+description = "Grant the current user access to uinput"
+run = '''
+user=$(id -un)
+getent group uinput >/dev/null 2>&1 || exit 0
+for group in uinput input; do
+  getent group "$group" >/dev/null 2>&1 || continue
+  id -nG "$user" | tr ' ' '\n' | grep -qx "$group" || sudo usermod -aG "$group" "$user"
+done
+if [ ! -e /dev/uinput ] || [ "$(stat -c '%G %a' /dev/uinput 2>/dev/null)" != "uinput 660" ]; then
+  sudo udevadm control --reload-rules
+  sudo udevadm trigger --subsystem-match=misc
+fi
+'''
+
+
+[dotfiles]
+"~/.config/hyprmoncfg" = { mode = "track", exclude = ["display-fallbacks.json"] }
+"~/.config/uwsm" = { mode = "track" }

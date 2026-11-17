@@ -1,1 +1,1 @@
-env = ["minds", "work"]
+env = ["minds", "work"{% if os() == "linux" and env.WSL_DISTRO_NAME is not defined and env.WSL_INTEROP is not defined %}, "desktop"{% endif %}]

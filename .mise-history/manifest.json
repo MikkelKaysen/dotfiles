@@ -2,6 +2,12 @@
   "format": 1,
   "enrollment": [
     {
+      "path": "config/config.desktop.toml",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "config/config.linux.toml",
       "autosave": true,
       "encrypt": false,
@@ -101,7 +107,49 @@
       "variants": []
     },
     {
+      "path": "home/.config/ghostty",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "home/.config/git/hooks",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "home/.config/hypr",
+      "autosave": true,
+      "encrypt": false,
+      "variants": [],
+      "exclude": [
+        "hyprmoncfg-monitors.lua"
+      ]
+    },
+    {
+      "path": "home/.config/hyprmoncfg",
+      "autosave": true,
+      "encrypt": false,
+      "variants": [],
+      "exclude": [
+        "display-fallbacks.json"
+      ]
+    },
+    {
+      "path": "home/.config/kanata/linux.kbd",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "home/.config/kanata/macos.kbd",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "home/.config/noctalia",
       "autosave": true,
       "encrypt": false,
       "variants": []
@@ -153,6 +201,12 @@
     },
     {
       "path": "home/.config/starship.toml",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "home/.config/uwsm",
       "autosave": true,
       "encrypt": false,
       "variants": []
