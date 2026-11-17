@@ -69,11 +69,51 @@ require("util.notes_sync").setup({
 vim.api.nvim_create_autocmd("FileType", {
   group = vim.api.nvim_create_augroup("neorg_buffer_opts", { clear = true }),
   pattern = "norg",
-  callback = function()
+  callback = function(ev)
     vim.opt_local.conceallevel = 2
     vim.opt_local.wrap = true
     vim.opt_local.linebreak = true
     vim.opt_local.spell = true
+
+    local wk = require("which-key")
+    wk.add(
+      {
+        { "<localleader>t", group = "todo" },
+        { "<localleader>l", group = "list" },
+        { "<localleader>i", group = "insert" },
+      },
+      { buffer = ev.buf }
+    )
+
+    local map = function(mode, lhs, rhs, desc)
+      vim.keymap.set(mode, lhs, rhs, { buffer = ev.buf, desc = desc, silent = true })
+    end
+
+    map("n", "<LocalLeader>tu", "<Plug>(neorg.qol.todo-items.todo.task-undone)", "[neorg] Mark as Undone")
+    map("n", "<LocalLeader>tp", "<Plug>(neorg.qol.todo-items.todo.task-pending)", "[neorg] Mark as Pending")
+    map("n", "<LocalLeader>td", "<Plug>(neorg.qol.todo-items.todo.task-done)", "[neorg] Mark as Done")
+    map("n", "<LocalLeader>th", "<Plug>(neorg.qol.todo-items.todo.task-on-hold)", "[neorg] Mark as On Hold")
+    map("n", "<LocalLeader>tc", "<Plug>(neorg.qol.todo-items.todo.task-cancelled)", "[neorg] Mark as Cancelled")
+    map("n", "<LocalLeader>tr", "<Plug>(neorg.qol.todo-items.todo.task-recurring)", "[neorg] Mark as Recurring")
+    map("n", "<LocalLeader>ti", "<Plug>(neorg.qol.todo-items.todo.task-important)", "[neorg] Mark as Important")
+    map("n", "<LocalLeader>ta", "<Plug>(neorg.qol.todo-items.todo.task-ambiguous)", "[neorg] Mark as Ambiguous")
+    map("n", "<C-Space>", "<Plug>(neorg.qol.todo-items.todo.task-cycle)", "[neorg] Cycle Task")
+    map("n", ">.", "<Plug>(neorg.promo.promote)", "[neorg] Promote Object (Non-Recursively)")
+    map("n", "<,", "<Plug>(neorg.promo.demote)", "[neorg] Demote Object (Non-Recursively)")
+    map("n", ">>", "<Plug>(neorg.promo.promote.nested)", "[neorg] Promote Object (Recursively)")
+    map("n", "<<", "<Plug>(neorg.promo.demote.nested)", "[neorg] Demote Object (Recursively)")
+    map("n", "<LocalLeader>lt", "<Plug>(neorg.pivot.list.toggle)", "[neorg] Toggle (Un)ordered List")
+    map("n", "<LocalLeader>li", "<Plug>(neorg.pivot.list.invert)", "[neorg] Invert (Un)ordered List")
+    map("n", "<LocalLeader>id", "<Plug>(neorg.tempus.insert-date)", "[neorg] Insert Date")
+    map("n", "<LocalLeader>nn", "<Plug>(neorg.dirman.new-note)", "[neorg] Create New Note")
+    map("n", "<LocalLeader>cm", "<Plug>(neorg.looking-glass.magnify-code-block)", "[neorg] Magnify Code Block")
+    map("n", "<LocalLeader>?", function()
+      require("which-key").show({ keys = "<localleader>", loop = true })
+    end, "[neorg] Browse keymaps")
+    map("i", "<C-t>", "<Plug>(neorg.promo.promote)", "[neorg] Promote Object (Recursively)")
+    map("i", "<C-d>", "<Plug>(neorg.promo.demote)", "[neorg] Demote Object (Recursively)")
+    map("v", ">", "<Plug>(neorg.promo.promote.range)", "[neorg] Promote Objects in Range")
+    map("v", "<", "<Plug>(neorg.promo.demote.range)", "[neorg] Demote Objects in Range")
   end,
 })
 
