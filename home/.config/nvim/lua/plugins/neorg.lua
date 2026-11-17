@@ -162,9 +162,9 @@ vim.api.nvim_create_autocmd("FileType", {
       local row = vim.api.nvim_win_get_cursor(0)[1]
       for line = row, 1, -1 do
         local text = vim.api.nvim_buf_get_lines(0, line - 1, line, false)[1] or ""
-        local stars = text:match("^%s*(%*+)")
-        if stars then
-          return clamp_depth(#stars)
+        local parsed = parse_norg_line(text)
+        if parsed.kind == "heading" then
+          return clamp_depth(parsed.depth)
         end
       end
       return 1
