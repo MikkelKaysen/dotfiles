@@ -203,14 +203,35 @@ local function is_neorg_buffer(buf)
 end
 
 local function usable_non_neorg_buffer()
+  local function usable(buf)
+    if not vim.api.nvim_buf_is_valid(buf) or is_neorg_buffer(buf) then
+      return false
+    end
+    local name = vim.api.nvim_buf_get_name(buf)
+    if name ~= "" then
+      return true
+    end
+    if vim.bo[buf].modified then
+      return true
+    end
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    if #lines > 1 then
+      return true
+    end
+    if #lines == 1 and lines[1] ~= "" then
+      return true
+    end
+    return false
+  end
+
   local alt = vim.fn.bufnr("#")
-  if alt ~= -1 and vim.api.nvim_buf_is_valid(alt) and not is_neorg_buffer(alt) then
+  if alt ~= -1 and usable(alt) then
     return alt
   end
 
   for _, info in ipairs(vim.fn.getbufinfo({ buflisted = 1 })) do
     local buf = info.bufnr
-    if vim.api.nvim_buf_is_valid(buf) and not is_neorg_buffer(buf) then
+    if usable(buf) then
       return buf
     end
   end
