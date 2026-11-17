@@ -90,17 +90,24 @@ vim.api.nvim_create_autocmd("FileType", {
       vim.keymap.set(mode, lhs, rhs, { buffer = ev.buf, desc = desc, silent = true })
     end
 
-    local function trim(s)
-      return (s or ""):gsub("^%s+", ""):gsub("%s+$", "")
-    end
-
-    local function normalize_space(s)
-      return trim((s or ""):gsub("%s+", " "))
+    local function strip_leading_space(s)
+      return (s or ""):gsub("^%s+", "")
     end
 
     local function clamp_depth(depth)
       local n = tonumber(depth) or 1
       return math.max(1, math.min(6, n))
+    end
+
+    local function task_state_token(str)
+      if not str or str == "" then
+        return nil, nil
+      end
+      local status, body = str:match("^%s*%(([ %sx%-%=%_%!%+%?])%)%s*(.*)$")
+      if status then
+        return status, body or ""
+      end
+      return nil, str
     end
 
     local function parse_norg_line(line)
@@ -111,41 +118,43 @@ vim.api.nvim_create_autocmd("FileType", {
         return parsed
       end
 
-      local stars, heading_body = text:match("^(%*+)%s*(.*)$")
-      if stars then
+      local stars, after = text:match("^(%*+)(.*)$")
+      if stars and (after == "" or after:match("^%s")) then
+        local status, body = task_state_token(after)
         parsed.kind = "heading"
         parsed.depth = clamp_depth(#stars)
-        parsed.body = normalize_space(heading_body)
+        parsed.status = status
+        parsed.body = strip_leading_space(body or "")
         return parsed
       end
 
-      local tildes, ordered_body = text:match("^(~+)%s*(.*)$")
-      if tildes then
+      local tildes, after = text:match("^(~+)(.*)$")
+      if tildes and (after == "" or after:match("^%s")) then
+        local status, body = task_state_token(after)
         parsed.kind = "ordered"
         parsed.depth = clamp_depth(#tildes)
-        parsed.body = normalize_space(ordered_body)
+        parsed.status = status
+        parsed.body = strip_leading_space(body or "")
         return parsed
       end
 
-      local dashes, rest_after = text:match("^(-+)(.*)$")
-      if dashes then
-        local todo_token, todo_body = rest_after:match("^%s*(%([^)]*%))%s*(.*)$")
-        if todo_token then
-          local status = todo_token:match("^%((.-)%)$")
+      local dashes, after = text:match("^(-+)(.*)$")
+      if dashes and (after == "" or after:match("^%s")) then
+        local status, body = task_state_token(after)
+        if status then
           parsed.kind = "todo"
           parsed.depth = clamp_depth(#dashes)
-          parsed.status = (status and normalize_space(status)) or " "
-          parsed.body = normalize_space(todo_body)
+          parsed.status = status
+          parsed.body = strip_leading_space(body or "")
           return parsed
         end
-
         parsed.kind = "unordered"
         parsed.depth = clamp_depth(#dashes)
-        parsed.body = normalize_space(rest_after)
+        parsed.body = strip_leading_space(after or "")
         return parsed
       end
 
-      parsed.body = normalize_space(text)
+      parsed.body = text
       return parsed
     end
 
@@ -189,12 +198,19 @@ vim.api.nvim_create_autocmd("FileType", {
       local new_line = indent .. prefix
       vim.api.nvim_buf_set_lines(0, row, row, false, { new_line })
       vim.api.nvim_win_set_cursor(0, { row + 1, #new_line })
-      vim.cmd("startinsert")
+      vim.cmd("startinsert!")
+    end
+
+    local function make_marker(prefix, body)
+      if body == "" then
+        return prefix
+      end
+      return prefix .. " " .. strip_leading_space(body)
     end
 
     local function toggle_norg_line(line, target)
       local parsed = parse_norg_line(line)
-      local body = normalize_space(parsed.body)
+      local body = parsed.body
 
       if target == "plain" then
         return parsed.indent .. body
@@ -207,27 +223,32 @@ vim.api.nvim_create_autocmd("FileType", {
       local depth = parsed.kind == "plain" and 1 or clamp_depth(parsed.depth)
       local prefix
       if target == "heading" then
-        prefix = string.rep("*", depth) .. " "
+        prefix = string.rep("*", depth)
       elseif target == "unordered" then
-        prefix = string.rep("-", depth) .. " "
+        prefix = string.rep("-", depth)
       elseif target == "ordered" then
-        prefix = string.rep("~", depth) .. " "
+        prefix = string.rep("~", depth)
       elseif target == "todo" then
-        prefix = string.rep("-", depth) .. " ( ) "
+        prefix = string.rep("-", depth) .. " ( )"
       else
         return parsed.indent .. body
       end
 
-      return parsed.indent .. prefix .. body
+      if target == "todo" then
+        return parsed.indent .. make_marker(prefix, body)
+      end
+      return parsed.indent .. make_marker(prefix, body)
     end
 
     local function apply_toggle_range(target, start_row, end_row)
+      local s = math.min(start_row, end_row)
+      local e = math.max(start_row, end_row)
       local rows = {}
-      for row = start_row, end_row do
+      for row = s, e do
         local line = vim.api.nvim_buf_get_lines(0, row - 1, row, false)[1] or ""
         rows[#rows + 1] = toggle_norg_line(line, target)
       end
-      vim.api.nvim_buf_set_lines(0, start_row - 1, end_row, false, rows)
+      vim.api.nvim_buf_set_lines(0, s - 1, e, false, rows)
     end
 
     map("n", "<LocalLeader>tu", "<Plug>(neorg.qol.todo-items.todo.task-undone)", "[neorg] Mark as Undone")
