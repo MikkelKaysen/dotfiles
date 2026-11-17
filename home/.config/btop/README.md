@@ -42,11 +42,11 @@ Errors are hidden, and btop always starts with its original arguments.
 btop reads its theme at startup. The wrapper selects the theme at the next btop
 launch. It does not reload a theme in a running btop.
 
-## Noctalia hooks (not active on this WSL machine)
+## Noctalia hooks (optional)
 
-This WSL machine has no active Noctalia configuration (`~/.config/noctalia` does not
-exist). Nothing is installed or written for Noctalia here. The hook integrations below
-are supplied for documentation; their live behavior has not been tested on this machine.
+These hook integrations are for machines where Noctalia is installed and configured.
+They are optional; do not edit or enable them on a machine without an active Noctalia
+config.
 
 ### Noctalia v5 (TOML)
 
@@ -54,7 +54,7 @@ are supplied for documentation; their live behavior has not been tested on this 
 theme_mode_changed` command runs the script with `NOCTALIA_THEME_MODE` set to `dark`
 or `light`.
 
-Install only on a Noctalia machine, after confirming an existing Noctalia config:
+Install only on a machine with an existing Noctalia config:
 
 ```sh
 ln -s "${XDG_CONFIG_HOME:-$HOME/.config}/btop/noctalia-hook.toml" \
@@ -64,9 +64,9 @@ ln -s "${XDG_CONFIG_HOME:-$HOME/.config}/btop/noctalia-hook.toml" \
 - Do not use `ln -f`; it could clobber an existing file.
 - If the Noctalia config already has a `theme_mode_changed` hook, merge the command
   into that list. Do not add a second `[hooks]` table.
-- To stop Noctalia from rewriting btop's theme, remove only `btop` from
-  `[theme.templates] builtin_ids`. Keep the other templates. Disabling it may delete
-  the generated `btop/themes/noctalia.theme`; back that file up first if you want it.
+- This dotfiles config omits only `btop` from `[theme.templates] builtin_ids`, so
+  Noctalia does not overwrite btop's theme while still keeping the other generated
+  templates.
 
 ### Noctalia v4 (JSON, legacy)
 
@@ -86,8 +86,7 @@ Noctalia replaces the literal `$1` with `true` (dark) or `false` (light) before 
 the command. The script maps `true` to Mocha and `false` to Latte.
 
 Do not edit the settings file on a machine without an active Noctalia config.
-The btop template toggle for v4 has not been verified here; use the existing Noctalia
-UI for it.
+Use the existing Noctalia UI for the v4 template toggle if needed.
 
 ## Forced launch
 
@@ -106,7 +105,7 @@ Their license notice is `themes/LICENSE.catppuccin` (MIT).
 ## Files
 
 - `theme-sync.sh`: selects Mocha or Latte and updates the `catppuccin.theme` symlink.
-- `noctalia-hook.toml`: optional Noctalia v5 hook snippet, not active.
+- `noctalia-hook.toml`: optional Noctalia v5 hook snippet.
 - `themes/catppuccin_mocha.theme`, `themes/catppuccin_latte.theme`: theme files.
 - `themes/LICENSE.catppuccin`: license notice for the theme files.
 - `themes/noctalia.theme`: unchanged.

@@ -94,7 +94,7 @@ pure_black_dark = false
 sync_color_scheme = true
 
     [theme.templates]
-    builtin_ids = [ "btop", "gtk3", "gtk4", "kcolorscheme", "kitty", "qt", "alacritty", "hyprland" ]
+    builtin_ids = [ "gtk3", "gtk4", "kcolorscheme", "kitty", "qt", "alacritty", "hyprland" ]
 
 
 [widget.keybinds]
