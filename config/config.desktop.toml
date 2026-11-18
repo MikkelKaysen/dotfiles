@@ -2,6 +2,7 @@
 # miserc.local.toml enables on Linux machines that are not WSL.
 
 [bootstrap.packages]
+"pacman:gnome-keyring" = "latest"
 "aur:kanata" = "latest"
 "aur:hyprmoncfg-bin" = "latest"
 "pacman:ghostty" = "latest"
@@ -19,6 +20,20 @@ content = '''KERNEL=="uinput", MODE="0660", GROUP="uinput", OPTIONS+="static_nod
 owner = "root"
 group = "root"
 mode = "0644"
+
+[bootstrap.files."/etc/pam.d/greetd"]
+id = "pam-gnome-keyring"
+block = '''
+# Unlock the login keyring with the password typed at the greeter.
+auth       optional     pam_gnome_keyring.so
+session    optional     pam_gnome_keyring.so auto_start
+'''
+
+[bootstrap.files."/etc/pam.d/system-auth"]
+id = "pam-gnome-keyring-password"
+block = '''
+password   optional                    pam_gnome_keyring.so use_authtok
+'''
 
 [bootstrap.linux.systemd.units.kanata]
 description = "Kanata keyboard remapper"
