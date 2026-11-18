@@ -34,6 +34,12 @@ end
 
 Snacks.setup({
   bigfile = { enabled = true },
+  image = {
+    enabled = vim.env.ZELLIJ == nil,
+    docs = { inline = true, float = true },
+    max_width = 80,
+    max_height = 40,
+  },
   indent = { enabled = true },
   input = { enabled = true },
   notifier = { enabled = true },
@@ -42,6 +48,7 @@ Snacks.setup({
   scroll = { enabled = false }, -- disabled: mini.animate handles scroll animation
   statuscolumn = { enabled = false }, -- set in config/options.lua
   terminal = {
+    position = "float",
     win = {
       keys = {
         nav_h = { "<C-h>", term_nav("h"), desc = "Go to Left Window", expr = true, mode = "t" },
