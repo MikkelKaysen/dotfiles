@@ -20,6 +20,9 @@ run = [
   "[[ -f ~/.config/fnox/age.txt ]] || { mkdir -p ~/.config/fnox; mise exec -- age-keygen -o ~/.config/fnox/age.txt; chmod 600 ~/.config/fnox/age.txt; }",
 ]
 
+[bootstrap.hooks.post-tools]
+run = ["mise exec -- ya pkg install"]
+
 # --- Always create ~/code/personal ---
 [bootstrap.directories."~/code/personal"]
 mode = "0755"
@@ -60,6 +63,7 @@ mode = "0755"
 "~/.config/opencode/plugins" = { mode = "track", exclude = ["node_modules"] }
 "~/.config/opencode/profiles/personal/opencode.jsonc" = { source = "opencode/personal/opencode.jsonc", mode = "symlink" }
 "~/.config/starship.toml" = { mode = "track" }
+"~/.config/yazi" = { mode = "track", exclude = ["flavors"] }
 "~/.config/zellij" = { mode = "track" }
 "~/.config/zsh" = { mode = "track" }
 "~/.gitconfig" = { source = "templates/git/gitconfig.tmpl", mode = "template", permissions = "0644" }
@@ -86,6 +90,12 @@ fzf = "latest"
 ripgrep = "latest"
 fd = "latest"
 bat = "latest"
+7zip = "latest"
+ffmpeg = "latest"
+imagemagick = "latest"
+jq = "latest"
+poppler = "latest"
+resvg = "latest"
 yazi = "latest"
 zellij = "latest"
 zoxide = "latest"
@@ -96,7 +106,7 @@ eza = "latest"
 uv = "latest"
 codegraph = "latest"
 playwright = "1.64.1"
-"cargo:abtop" = "latest"
+"npm:tokscale" = "latest"
 
 [settings]
 minimum_release_age = "12h"

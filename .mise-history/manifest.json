@@ -212,6 +212,15 @@
       "variants": []
     },
     {
+      "path": "home/.config/yazi",
+      "autosave": true,
+      "encrypt": false,
+      "variants": [],
+      "exclude": [
+        "flavors"
+      ]
+    },
+    {
       "path": "home/.config/zellij",
       "autosave": true,
       "encrypt": false,

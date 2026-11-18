@@ -4,9 +4,13 @@ login_shell = "/bin/zsh"
 [bootstrap.packages]
 "zypper:zsh" = { os = "linux" }
 "zypper:neovim" = { os = "linux" }
+"zypper:file" = { os = "linux" }
 "dnf:zsh" = { os = "linux" }
+"dnf:file" = { os = "linux" }
 "apt:zsh" = { os = "linux" }
+"apt:file" = { os = "linux" }
 "pacman:zsh" = { os = "linux" }
+"pacman:file" = { os = "linux" }
 
 # mise's `aur:` manager needs paru or yay, and vanilla Arch ships neither in
 # its repositories. Provide a helper on every pacman machine; other distros

@@ -1,8 +1,7 @@
 # Ready-to-enable Noctalia hook for the btop Catppuccin theme sync.
 #
-# NOT ACTIVE. Nothing in this file is loaded by Noctalia until it is linked into
-# ~/.config/noctalia (see btop/README.md). Do not install it on a machine without an
-# active Noctalia configuration (for example this WSL machine).
+# This file is optional and is only used when it is linked into a Noctalia config
+# directory or otherwise explicitly loaded by a Noctalia config.
 #
 # Noctalia loads any *.toml file in its config directory. If your Noctalia config
 # already defines a theme_mode_changed hook, do not add a second [hooks] table;
