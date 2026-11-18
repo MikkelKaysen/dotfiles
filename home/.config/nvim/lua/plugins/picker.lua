@@ -36,9 +36,12 @@ Snacks.setup({
   bigfile = { enabled = true },
   image = {
     enabled = vim.env.ZELLIJ == nil,
-    docs = { inline = true, float = true },
-    max_width = 80,
-    max_height = 40,
+    doc = {
+      inline = true,
+      float = true,
+      max_width = 80,
+      max_height = 40,
+    },
   },
   indent = { enabled = true },
   input = { enabled = true },
