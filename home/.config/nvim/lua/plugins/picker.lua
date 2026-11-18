@@ -1,7 +1,7 @@
 -- ---------------------------------------------------------------------------
 -- snacks.nvim — the core UI layer: notifier, scope, input, words, toggle,
--- indent, scroll, bigfile, quickfile, terminal, dashboard (starter) + the
--- picker (replaces telescope).
+-- indent, scroll, bigfile, quickfile, image, terminal, dashboard (starter) +
+-- the picker (replaces telescope).
 -- Must be required before other plugin modules that use `Snacks.*`.
 -- Ported from LazyVim's core snacks config (ui.lua + util.lua) + the
 -- `snacks_picker` extra (picker opts/actions) + the dashboard preset
