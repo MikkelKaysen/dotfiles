@@ -27,7 +27,7 @@ local function save_note_buffer(buf)
   local ok = pcall(vim.api.nvim_buf_call, buf, function()
     vim.cmd.write()
   end)
-  if not ok then
+  if not ok or vim.bo[buf].modified then
     vim.notify("Orgmode: failed to save note buffer before close", vim.log.levels.ERROR)
     return false
   end
@@ -82,7 +82,7 @@ local function is_org_ui_window(win)
     return true
   end
 
-  if ft == "org" and name ~= "" and not under_notes_root(name) then
+  if ft == "org" and not under_notes_root(name) then
     local cfg = vim.api.nvim_win_get_config(win)
     if cfg.relative ~= "" or cfg.external then
       return true
@@ -92,8 +92,8 @@ local function is_org_ui_window(win)
   return false
 end
 
-local function is_usable_non_note_buffer(buf)
-  if not vim.api.nvim_buf_is_valid(buf) or not vim.api.nvim_buf_is_loaded(buf) then
+local function is_usable_non_note_buffer(buf, win)
+  if not buf or not vim.api.nvim_buf_is_valid(buf) or not vim.api.nvim_buf_is_loaded(buf) then
     return false
   end
   if not vim.bo[buf].buflisted then
@@ -103,6 +103,9 @@ local function is_usable_non_note_buffer(buf)
     return false
   end
   if is_capture_buffer(buf) then
+    return false
+  end
+  if win and is_org_ui_window(win) then
     return false
   end
 
@@ -190,21 +193,23 @@ local function close_org_buffers()
 
     local current_tab = vim.api.nvim_get_current_tabpage()
     local usable_win = nil
+    local usable_win_tab = nil
     for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
       for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
-        if vim.api.nvim_win_is_valid(win) then
-          local buf = vim.api.nvim_win_get_buf(win)
-          if is_usable_non_note_buffer(buf) then
-            if tab == current_tab then
-              usable_win = win
-              break
-            elseif not usable_win then
-              usable_win = win
-            end
+        local buf = vim.api.nvim_win_get_buf(win)
+        if vim.api.nvim_win_is_valid(win) and is_usable_non_note_buffer(buf, win) then
+          if tab == current_tab then
+            usable_win = win
+            usable_win_tab = tab
+            break
+          end
+          if not usable_win then
+            usable_win = win
+            usable_win_tab = tab
           end
         end
       end
-      if usable_win and tab == current_tab then
+      if usable_win and usable_win_tab == current_tab then
         break
       end
     end
@@ -225,13 +230,15 @@ local function close_org_buffers()
     end
 
     local survivor = nil
-    local current_wins = vim.api.nvim_tabpage_list_wins(current_tab)
     if usable_win and vim.api.nvim_win_get_tabpage(usable_win) == current_tab then
       survivor = usable_win
+    elseif usable_win then
+      vim.api.nvim_set_current_win(vim.api.nvim_tabpage_get_win(usable_win_tab))
+      survivor = vim.api.nvim_get_current_win()
     end
 
     if not survivor then
-      for _, win in ipairs(current_wins) do
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(current_tab)) do
         if vim.api.nvim_win_is_valid(win) then
           local buf = vim.api.nvim_win_get_buf(win)
           if not is_note_buffer(buf) and not is_org_ui_window(win) and not is_capture_buffer(buf) then
@@ -243,7 +250,7 @@ local function close_org_buffers()
     end
 
     if not survivor then
-      for _, win in ipairs(current_wins) do
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(current_tab)) do
         if vim.api.nvim_win_is_valid(win) then
           survivor = win
           break
@@ -265,11 +272,19 @@ local function close_org_buffers()
       end
     end
 
-    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-      if vim.api.nvim_buf_is_valid(buf) then
-        local name = vim.api.nvim_buf_get_name(buf)
-        if name == "" and not vim.bo[buf].modified and #vim.fn.win_findbuf(buf) == 0 then
-          pcall(vim.api.nvim_buf_delete, buf, { force = true })
+    local current_wins = vim.api.nvim_tabpage_list_wins(vim.api.nvim_get_current_tabpage())
+    for _, win in ipairs(current_wins) do
+      if vim.api.nvim_win_is_valid(win) then
+        local buf = vim.api.nvim_win_get_buf(win)
+        if not usable_win and not is_note_buffer(buf) and not is_org_ui_window(win) and not is_capture_buffer(buf) then
+          local name = vim.api.nvim_buf_get_name(buf)
+          if name == "" and not vim.bo[buf].modified and #vim.fn.win_findbuf(buf) == 1 then
+            local cur = vim.api.nvim_get_current_win()
+            if win == cur then
+              require("snacks").dashboard()
+            end
+            pcall(vim.api.nvim_win_close, win, true)
+          end
         end
       end
     end
