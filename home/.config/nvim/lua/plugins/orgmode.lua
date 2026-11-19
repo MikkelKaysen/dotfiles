@@ -224,6 +224,26 @@ local function close_org_buffers()
       end
     end
 
+    local dashboard_survivor = nil
+    if not usable_win then
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(current_tab)) do
+        if vim.api.nvim_win_is_valid(win) then
+          local cfg = vim.api.nvim_win_get_config(win)
+          if cfg.relative == "" and not cfg.external then
+            local buf = vim.api.nvim_win_get_buf(win)
+            if vim.api.nvim_buf_is_valid(buf) then
+              dashboard_survivor = win
+              break
+            end
+          end
+        end
+      end
+      if not dashboard_survivor then
+        vim.notify("Orgmode: no normal non-Org window available for dashboard fallback", vim.log.levels.WARN)
+        return
+      end
+    end
+
     for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
       for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
         if vim.api.nvim_win_is_valid(win) then
@@ -231,6 +251,8 @@ local function close_org_buffers()
           if is_note_buffer(buf) or is_org_ui_window(win) or is_capture_buffer(buf) then
             if usable_win and win == usable_win then
               -- preserve a usable non-note window
+            elseif dashboard_survivor and win == dashboard_survivor then
+              -- preserve the fallback survivor for :only/dashboard
             else
               if not close_window_if_valid(win, true) then
                 return
@@ -249,25 +271,7 @@ local function close_org_buffers()
       return
     end
 
-    local survivor = nil
-    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(current_tab)) do
-      if vim.api.nvim_win_is_valid(win) then
-        local cfg = vim.api.nvim_win_get_config(win)
-        if cfg.relative == "" and not cfg.external then
-          local buf = vim.api.nvim_win_get_buf(win)
-          if vim.api.nvim_buf_is_valid(buf) and not is_note_buffer(buf) and not is_capture_buffer(buf) and not is_org_ui_window(win) then
-            survivor = win
-            break
-          end
-        end
-      end
-    end
-
-    if not survivor or not vim.api.nvim_win_is_valid(survivor) then
-      vim.notify("Orgmode: no normal non-Org window available for dashboard fallback", vim.log.levels.WARN)
-      return
-    end
-
+    local survivor = dashboard_survivor
     local survivor_buf = vim.api.nvim_win_get_buf(survivor)
     vim.api.nvim_set_current_win(survivor)
     vim.cmd("only")
