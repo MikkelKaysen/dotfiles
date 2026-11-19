@@ -4,10 +4,48 @@
 -- same ordering as LazyVim's lazy.nvim key registration.
 -- ---------------------------------------------------------------------------
 
+local function dedupe_lsp_locations(items)
+  local seen = {}
+  local filtered = {}
+
+  for _, item in ipairs(items or {}) do
+    if item then
+      local filename = item.filename or (item.buf and vim.api.nvim_buf_get_name(item.buf)) or ""
+      if type(filename) == "string" and filename ~= "" then
+        filename = vim.fs.normalize(filename)
+      end
+
+      local pos = item.pos or { 1, 0 }
+      local end_pos = item.end_pos or pos
+
+      local start_line = tonumber(pos[1]) or 1
+      local start_col = tonumber(pos[2]) or 0
+      local end_line = tonumber(end_pos[1]) or start_line
+      local end_col = tonumber(end_pos[2]) or start_col
+      local key = table.concat({ filename, start_line, start_col, end_line, end_col }, "\x1f")
+
+      if not seen[key] then
+        seen[key] = true
+        filtered[#filtered + 1] = item
+      end
+    end
+  end
+
+  return filtered
+end
+
 require("trouble").setup({
   modes = {
+    lsp_base = {
+      filter = dedupe_lsp_locations,
+    },
     lsp = {
-      win = { position = "right" },
+      win = { position = "right", size = 40 },
+      focus = false,
+    },
+    symbols = {
+      win = { position = "right", size = 40 },
+      focus = false,
     },
   },
 })
