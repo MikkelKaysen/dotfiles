@@ -13,15 +13,6 @@ local function org_grep()
   require("snacks").picker.grep({ cwd = NOTES_ROOT, glob = "*.org" })
 end
 
-local function org_heading_grep()
-  require("snacks").picker.grep({
-    cwd = NOTES_ROOT,
-    search = "^\\*+ ",
-    regex = true,
-    glob = "*.org",
-  })
-end
-
 local function save_note_buffer(buf)
   if not vim.api.nvim_buf_is_valid(buf) then
     return true
