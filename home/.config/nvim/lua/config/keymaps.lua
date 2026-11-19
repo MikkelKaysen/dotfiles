@@ -112,21 +112,24 @@ map("n", "<leader>pM", function()
     return
   end
 
-  local ok_refresh = pcall(registry.refresh, function()
-    local packages = registry.get_all_packages() or {}
+  local ok_refresh = pcall(registry.refresh, function(success)
+    if not success then
+      vim.notify("Failed to refresh the Mason registry.", vim.log.levels.ERROR)
+      return
+    end
+
+    local packages = registry.get_installed_packages() or {}
     local updates = {}
 
     for _, pkg in ipairs(packages) do
-      if pkg:is_installed() then
-        local installed = pkg:get_installed_version()
-        local latest = pkg:get_latest_version()
-        if installed and latest and installed ~= latest then
-          updates[#updates + 1] = {
-            pkg = pkg,
-            installed = installed,
-            latest = latest,
-          }
-        end
+      local installed = pkg:get_installed_version()
+      local latest = pkg:get_latest_version()
+      if installed and latest and installed ~= latest then
+        updates[#updates + 1] = {
+          pkg = pkg,
+          installed = installed,
+          latest = latest,
+        }
       end
     end
 
