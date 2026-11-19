@@ -102,6 +102,57 @@ map("n", "gcO", "O<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>", { desc = "Add Commen
 map("n", "<leader>pu", function()
   vim.pack.update()
 end, { desc = "Update Plugins" })
+map("n", "<leader>pU", function()
+  vim.pack.update(nil, { force = true })
+end, { desc = "Update Plugins without review prompt" })
+map("n", "<leader>pM", function()
+  local ok_registry, registry = pcall(require, "mason-registry")
+  if not ok_registry or not registry then
+    vim.notify("Mason registry is unavailable; unable to update installed tools.", vim.log.levels.ERROR)
+    return
+  end
+
+  local ok_refresh = pcall(registry.refresh, function()
+    local packages = registry.get_all_packages() or {}
+    local updates = {}
+
+    for _, pkg in ipairs(packages) do
+      if pkg:is_installed() then
+        local installed = pkg:get_installed_version()
+        local latest = pkg:get_latest_version()
+        if installed and latest and installed ~= latest then
+          updates[#updates + 1] = {
+            pkg = pkg,
+            installed = installed,
+            latest = latest,
+          }
+        end
+      end
+    end
+
+    if #updates == 0 then
+      vim.notify("Mason tools are already up to date.", vim.log.levels.INFO)
+      return
+    end
+
+    vim.notify(("Updating %d Mason tool(s) in the background..."):format(#updates), vim.log.levels.INFO)
+
+    for _, item in ipairs(updates) do
+      item.pkg:install({ version = item.latest }, function(success)
+        if not success then
+          vim.notify(
+            ("Failed to update Mason package `%s` from %s to %s."):format(item.pkg.name, item.installed, item.latest),
+            vim.log.levels.ERROR
+          )
+        end
+      end)
+    end
+  end)
+
+  if not ok_refresh then
+    vim.notify("Failed to refresh the Mason registry.", vim.log.levels.ERROR)
+  end
+end, { desc = "Update Mason tools in background" })
 
 -- new file
 map("n", "<leader>fn", "<cmd>enew<cr>", { desc = "New File" })
