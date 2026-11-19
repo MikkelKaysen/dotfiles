@@ -145,11 +145,6 @@
       "src": "https://github.com/stevearc/overseer.nvim.git",
       "version": "'master'"
     },
-    "pathlib.nvim": {
-      "rev": "57e5598af6fe253761c1b48e0b59b7cd6699e2c1",
-      "src": "https://github.com/pysan3/pathlib.nvim.git",
-      "version": "'v2.2.3'"
-    },
     "persistence.nvim": {
       "rev": "b20b2a7887bd39c1a356980b45e03250f3dce49c",
       "src": "https://github.com/folke/persistence.nvim.git",
