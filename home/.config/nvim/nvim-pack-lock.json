@@ -80,10 +80,6 @@
       "src": "https://github.com/mason-org/mason.nvim.git",
       "version": "'main'"
     },
-    "mini.ai": {
-      "rev": "c2e6e88a9de01b5aec5c3cffee1277b9ac8a6d69",
-      "src": "https://github.com/nvim-mini/mini.ai.git"
-    },
     "mini.animate": {
       "rev": "74d003a30c0c37c23015032516237c8cad09af9f",
       "src": "https://github.com/nvim-mini/mini.animate.git",
