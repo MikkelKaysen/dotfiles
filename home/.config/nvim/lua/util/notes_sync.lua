@@ -1,9 +1,9 @@
--- Git sync for the Neorg notes repository.
+-- Git sync for the Org notes repository.
 --
--- Scope: only personal/**/*.norg and work/**/*.norg may be committed. Any other
--- change, staged content, conflict, or in-progress git operation stops the run.
--- Runs are serialized per session and guarded by a lock directory in the git dir.
--- Nothing is ever forced, reset, stashed, or auto-aborted.
+-- Scope: only **/*.org files anywhere under the repo root may be committed. Any
+-- other change, staged content, conflict, or in-progress git operation stops the
+-- run. Runs are serialized per session and guarded by a lock directory in the git
+-- dir. Nothing is ever forced, reset, stashed, or auto-aborted.
 --
 -- Pipeline: validate (no network) -> stage/commit (offline OK) -> pull --rebase -> push.
 -- A failed pull leaves the local commit in place; the next sync retries.
