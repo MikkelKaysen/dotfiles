@@ -60,11 +60,6 @@
       "src": "https://github.com/MagicDuck/grug-far.nvim.git",
       "version": "'main'"
     },
-    "lua-utils.nvim": {
-      "rev": "e565749421f4bbb5d2e85e37c3cef9d56553d8bd",
-      "src": "https://github.com/nvim-neorg/lua-utils.nvim.git",
-      "version": "'v1.0.2'"
-    },
     "lualine.nvim": {
       "rev": "221ce6b2d999187044529f49da6554a92f740a96",
       "src": "https://github.com/nvim-lualine/lualine.nvim.git",
