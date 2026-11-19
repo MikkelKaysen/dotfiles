@@ -6,18 +6,19 @@ local NOTES_ROOT = vim.fs.normalize("/home/mkay/code/personal/notes.org")
 local NOTES_INDEX = NOTES_ROOT .. "/index.org"
 
 local function org_files_picker()
-  require("snacks").picker.files({ cwd = NOTES_ROOT })
+  require("snacks").picker.files({ cwd = NOTES_ROOT, glob = "*.org" })
 end
 
 local function org_grep()
-  require("snacks").picker.grep({ cwd = NOTES_ROOT })
+  require("snacks").picker.grep({ cwd = NOTES_ROOT, glob = "*.org" })
 end
 
 local function org_heading_grep()
   require("snacks").picker.grep({
     cwd = NOTES_ROOT,
-    pattern = "^\\*+ ",
-    text = "Org headings",
+    search = "^\\*+ ",
+    regex = true,
+    glob = "*.org",
   })
 end
 
