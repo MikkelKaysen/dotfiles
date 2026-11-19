@@ -152,7 +152,7 @@ local function parse_status(out)
   return entries
 end
 
--- Rejects absolute/parent paths, non-norg files, and any symlink or non-directory ancestor.
+-- Rejects absolute/parent paths, non-Org files, and any symlink or non-directory ancestor.
 -- Missing targets (deletions) are fine when their existing ancestors are real directories.
 ---@return boolean, string?
 local function safe_rel_path(rel)
