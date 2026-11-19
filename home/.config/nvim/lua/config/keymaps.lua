@@ -185,9 +185,6 @@ local function remove_inactive_plugins(names)
 end
 
 local ui_select = vim.ui.select
-if Snacks and Snacks.config and Snacks.config.ui and Snacks.config.ui.select then
-  ui_select = Snacks.config.ui.select
-end
 
 map("n", "<leader>pc", function()
   local names = get_inactive_plugins()
