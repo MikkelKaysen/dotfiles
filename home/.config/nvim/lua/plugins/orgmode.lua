@@ -109,12 +109,6 @@ require("orgmode").setup({
       target = NOTES_INDEX,
     },
   },
-  mappings = {
-    global = {
-      org_agenda = { "<leader>ja", desc = "Org Agenda" },
-      org_capture = { "<leader>jc", desc = "Capture" },
-    },
-  },
 })
 
 vim.api.nvim_create_autocmd("FileType", {
@@ -133,24 +127,13 @@ require("util.notes_sync").setup({
   expected_remote = "git@github.com:MikkelKaysen/notes.org.git",
 })
 
-vim.keymap.set("n", "<leader>ji", function()
-  vim.cmd.edit(NOTES_INDEX)
-end, { desc = "Open Notes Index" })
-vim.keymap.set("n", "<leader>jj", function()
-  require("orgmode").instance().capture:open_template_by_shortcut("j")
-end, { desc = "Open Journal Capture" })
-vim.keymap.set("n", "<leader>jf", function()
+vim.keymap.set("n", "<leader>of", function()
   org_files_picker()
 end, { desc = "Files" })
-vim.keymap.set("n", "<leader>jg", function()
+vim.keymap.set("n", "<leader>og", function()
   org_grep()
 end, { desc = "Grep" })
-vim.keymap.set("n", "<leader>jh", function()
-  org_heading_grep()
-end, { desc = "Grep headings" })
-vim.keymap.set("n", "<leader>js", function()
+vim.keymap.set("n", "<leader>os", function()
   vim.cmd.NotesSync()
 end, { desc = "NotesSync" })
-vim.keymap.set("n", "<leader>jq", close_org_buffers, { desc = "Close note buffers" })
-
-require("which-key").add({ { "<leader>j", group = "org" } }, { notify = false })
+vim.keymap.set("n", "<leader>oq", close_org_buffers, { desc = "Close note buffers" })
