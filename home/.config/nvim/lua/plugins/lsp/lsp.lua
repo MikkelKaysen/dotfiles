@@ -96,17 +96,15 @@ lsp.set({}, {
           if not what or not what.items then
             return
           end
-          local items = {}
-          for _, item in ipairs(what.items) do
-            items[#items + 1] = {
-              filename = item.filename,
-              lnum = item.lnum,
-              col = item.col,
-              end_lnum = item.end_lnum,
-              end_col = item.end_col,
-            }
-          end
-          what.items = vim.list.unique(items)
+          what.items = vim.list.unique(what.items, function(item)
+            return ("%s\0%d\0%d\0%d\0%d"):format(
+              item.filename or "",
+              item.lnum or 0,
+              item.col or 0,
+              item.end_lnum or 0,
+              item.end_col or 0
+            )
+          end)
           vim.fn.setqflist({}, " ", what)
           vim.cmd("botright copen")
         end,
@@ -115,7 +113,6 @@ lsp.set({}, {
     desc = "References",
     has = "references",
     mode = "n",
-    buffer = 0,
   },
 })
 
