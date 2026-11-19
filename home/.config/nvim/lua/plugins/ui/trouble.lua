@@ -12,12 +12,12 @@ require("trouble").setup({
   },
 })
 
-Snacks.keymap.set("n", "<leader>xx", "<cmd>Trouble diagnostics toggle<cr>", { desc = "Diagnostics (Trouble)" })
-Snacks.keymap.set("n", "<leader>xX", "<cmd>Trouble diagnostics toggle filter.buf=0<cr>", { desc = "Buffer Diagnostics (Trouble)" })
-Snacks.keymap.set("n", "<leader>cs", "<cmd>Trouble symbols toggle<cr>", { desc = "Symbols (Trouble)" })
-Snacks.keymap.set("n", "<leader>cS", "<cmd>Trouble lsp toggle<cr>", { desc = "LSP references/definitions/... (Trouble)" })
-Snacks.keymap.set("n", "<leader>xL", "<cmd>Trouble loclist toggle<cr>", { desc = "Location List (Trouble)" })
-Snacks.keymap.set("n", "<leader>xQ", "<cmd>Trouble qflist toggle<cr>", { desc = "Quickfix List (Trouble)" })
+Snacks.keymap.set("n", "<leader>xx", function() require("trouble").toggle({ mode = "diagnostics" }) end, { desc = "Diagnostics (Trouble)" })
+Snacks.keymap.set("n", "<leader>xX", function() require("trouble").toggle({ mode = "diagnostics", filter = { buf = 0 } }) end, { desc = "Buffer Diagnostics (Trouble)" })
+Snacks.keymap.set("n", "<leader>cs", function() require("trouble").toggle({ mode = "symbols" }) end, { desc = "Symbols (Trouble)" })
+Snacks.keymap.set("n", "<leader>cS", function() require("trouble").toggle({ mode = "lsp" }) end, { desc = "LSP references/definitions/... (Trouble)" })
+Snacks.keymap.set("n", "<leader>xL", function() require("trouble").toggle({ mode = "loclist" }) end, { desc = "Location List (Trouble)" })
+Snacks.keymap.set("n", "<leader>xQ", function() require("trouble").toggle({ mode = "qflist" }) end, { desc = "Quickfix List (Trouble)" })
 Snacks.keymap.set("n", "[q", function()
   if require("trouble").is_open() then
     require("trouble").prev({ skip_groups = true, jump = true })
