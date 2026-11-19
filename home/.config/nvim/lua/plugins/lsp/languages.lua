@@ -92,7 +92,7 @@ vim.filetype.add({
 
 -- render-markdown: nicer markdown rendering
 vim.api.nvim_create_autocmd("FileType", {
-  pattern = { "markdown", "norg", "rmd", "org", "codecompanion" },
+  pattern = { "markdown", "rmd", "org", "codecompanion" },
   callback = function()
     require("render-markdown").setup({
       code = {
