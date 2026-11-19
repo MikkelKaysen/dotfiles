@@ -88,6 +88,36 @@ lsp.set({}, {
   { "[[", function() Snacks.words.jump(-vim.v.count1) end, desc = "Prev Reference", has = "documentHighlight", enabled = function() return Snacks.words.is_enabled() end },
   { "<a-n>", function() Snacks.words.jump(vim.v.count1, true) end, desc = "Next Reference", has = "documentHighlight", enabled = function() return Snacks.words.is_enabled() end },
   { "<a-p>", function() Snacks.words.jump(-vim.v.count1, true) end, desc = "Prev Reference", has = "documentHighlight", enabled = function() return Snacks.words.is_enabled() end },
+  {
+    "grr",
+    function()
+      vim.lsp.buf.references(nil, {
+        on_list = function(what)
+          if not what or not what.items then
+            return
+          end
+          local items = vim.list_map(what.items, function(item)
+            local full = {
+              filename = item.filename,
+              lnum = item.lnum,
+              col = item.col,
+              end_lnum = item.end_lnum,
+              end_col = item.end_col,
+            }
+            return full
+          end)
+          local deduped = vim.list_unique(items)
+          what.items = deduped
+          vim.fn.setqflist({}, " ", what)
+          vim.cmd("botright copen")
+        end,
+      })
+    end,
+    desc = "References",
+    has = "references",
+    mode = "n",
+    buffer = 0,
+  },
 })
 
 -- Register the LSP formatter (fallback behind conform's primary)
