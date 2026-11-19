@@ -311,6 +311,52 @@ end, { desc = "Git Worktree (create)" })
 
 -- quit
 map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit All" })
+map("n", "<leader>qr", function()
+  local unsafe = {}
+
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_option(buf, "modified") then
+      local name = vim.api.nvim_buf_get_name(buf)
+      local buftype = vim.api.nvim_buf_get_option(buf, "buftype")
+      local org_capture = vim.b[buf] and vim.b[buf].org_capture
+      local org_edit = vim.b[buf] and vim.b[buf].__org_edit_special_ctx
+
+      if name == "" or buftype ~= "" or org_capture or org_edit then
+        local reason = name == "" and "unnamed"
+          or buftype ~= "" and ("nonempty buftype: " .. buftype)
+          or org_capture and "capture"
+          or org_edit and "source block edit"
+          or "temporary"
+
+        unsafe[#unsafe + 1] = string.format("buf %d (%s): %s", buf, name ~= "" and name or "unnamed", reason)
+      end
+    end
+  end
+
+  if #unsafe > 0 then
+    vim.notify("Refusing restart: modified temporary/non-regular buffer(s): " .. table.concat(unsafe, "; "), vim.log.levels.WARN)
+    return
+  end
+
+  local ok, err = pcall(vim.cmd.wall)
+  if not ok then
+    vim.notify(("Failed to save modified buffers before restart: %s"):format(err or "unknown error"), vim.log.levels.ERROR)
+    return
+  end
+
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_option(buf, "modified") then
+      local name = vim.api.nvim_buf_get_name(buf)
+      vim.notify(
+        ("Failed to save modified buffer before restart: %s"):format(name ~= "" and name or ("unnamed buffer " .. buf)),
+        vim.log.levels.ERROR
+      )
+      return
+    end
+  end
+
+  vim.cmd("restart")
+end, { desc = "Save and Restart Neovim" })
 
 -- highlights under cursor
 map("n", "<leader>ui", vim.show_pos, { desc = "Inspect Pos" })
