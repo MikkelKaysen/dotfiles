@@ -15,6 +15,20 @@ permissions:
   - { action: external_directory, resource: "*", effect: ask }
   # --- shell: pre-allowed safe commands (must come AFTER the "*" catch-all so they win) ---
   - { action: shell, resource: "*", effect: ask }
+  - { action: shell, resource: "ls*", effect: allow }
+  - { action: shell, resource: "pwd", effect: allow }
+  - { action: shell, resource: "rg*", effect: allow }
+  - { action: shell, resource: "grep *", effect: allow }
+  - { action: shell, resource: "find *", effect: allow }
+  - { action: shell, resource: "cat*", effect: allow }
+  - { action: shell, resource: "head*", effect: allow }
+  - { action: shell, resource: "tail*", effect: allow }
+  - { action: shell, resource: "wc*", effect: allow }
+  - { action: shell, resource: "stat*", effect: allow }
+  - { action: shell, resource: "file*", effect: allow }
+  - { action: shell, resource: "tree*", effect: allow }
+  - { action: shell, resource: "which*", effect: allow }
+  - { action: shell, resource: "diff*", effect: allow }
   - { action: shell, resource: "npm *", effect: allow }
   - { action: shell, resource: "npx *", effect: allow }
   - { action: shell, resource: "pnpm *", effect: allow }
