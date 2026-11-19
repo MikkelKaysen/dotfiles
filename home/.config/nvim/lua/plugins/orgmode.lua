@@ -108,7 +108,7 @@ require("orgmode").setup({
   org_capture_templates = {
     j = {
       description = "Journal",
-      template = "\n*** %<%Y-%m-%d> %<%A>\n**** %U\n\n%?",
+      template = "* %U\n\n%?",
       target = NOTES_ROOT .. "/journal.org",
       datetree = true,
     },
@@ -120,8 +120,8 @@ require("orgmode").setup({
   },
   mappings = {
     global = {
-      org_agenda = "<leader>ja",
-      org_capture = "<leader>jc",
+      org_agenda = { "<leader>ja", desc = "Org Agenda" },
+      org_capture = { "<leader>jc", desc = "Capture" },
     },
   },
 })
