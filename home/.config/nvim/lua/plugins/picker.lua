@@ -86,6 +86,7 @@ Snacks.setup({
   },
   explorer = { enabled = true },
   picker = {
+    ui_select = true,
     win = {
       input = {
         keys = {
