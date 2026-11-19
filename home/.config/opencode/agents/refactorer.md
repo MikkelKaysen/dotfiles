@@ -34,8 +34,6 @@ permissions:
   - { action: shell, resource: "cargo build*", effect: allow }
   - { action: shell, resource: "make*", effect: allow }
   - { action: shell, resource: "node*", effect: allow }
-  - { action: shell, resource: "rm -rf*", effect: deny }
-  - { action: shell, resource: "git push*", effect: deny }
   - { action: shell, resource: "git reset --hard*", effect: deny }
   - { action: shell, resource: "git push*", effect: deny }
   - { action: shell, resource: "git * push*", effect: deny }
