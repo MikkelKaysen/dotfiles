@@ -612,7 +612,7 @@ function M.setup(opts)
 
   vim.api.nvim_create_user_command("NotesSync", function()
     M.run("manual")
-  end, { desc = "Sync the Neorg notes repository (commit, pull --rebase, push)" })
+  end, { desc = "Sync the Org notes repository (commit, pull --rebase, push)" })
 end
 
 -- Exposed for fixture tests.
