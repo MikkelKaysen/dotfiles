@@ -96,18 +96,17 @@ lsp.set({}, {
           if not what or not what.items then
             return
           end
-          local items = vim.list_map(what.items, function(item)
-            local full = {
+          local items = {}
+          for _, item in ipairs(what.items) do
+            items[#items + 1] = {
               filename = item.filename,
               lnum = item.lnum,
               col = item.col,
               end_lnum = item.end_lnum,
               end_col = item.end_col,
             }
-            return full
-          end)
-          local deduped = vim.list_unique(items)
-          what.items = deduped
+          end
+          what.items = vim.list.unique(items)
           vim.fn.setqflist({}, " ", what)
           vim.cmd("botright copen")
         end,
