@@ -114,7 +114,7 @@
       "version": "'master'"
     },
     "neorg": {
-      "rev": "a09e0bb9b32e2d0406d4503ae8c1a7ad2ca83eae",
+      "rev": "6fda795b0108c92840fd32db6d5dd54e7f997fa8",
       "src": "https://github.com/nvim-neorg/neorg.git"
     },
     "noice.nvim": {
@@ -138,7 +138,7 @@
       "version": "'master'"
     },
     "nvim-nio": {
-      "rev": "5a3a06e5df34f1b4fc1500622b10620c49c60da6",
+      "rev": "edcc181a875301dd21840189aa2f2f9ad69fc172",
       "src": "https://github.com/nvim-neotest/nvim-nio.git"
     },
     "nvim-treesitter": {
@@ -167,7 +167,7 @@
       "version": "'master'"
     },
     "pathlib.nvim": {
-      "rev": "57e5598af6fe253761c1b48e0b59b7cd6699e2c1",
+      "rev": "a0d3dbbe00ce6a546426b1aed3838a82fe6bfc42",
       "src": "https://github.com/pysan3/pathlib.nvim.git"
     },
     "persistence.nvim": {
