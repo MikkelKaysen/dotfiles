@@ -57,22 +57,31 @@ local function usable_non_note_buffer()
   return newbuf
 end
 
+local function under_notes_root(path)
+  local norm = vim.fs.normalize(path or "")
+  return norm == NOTES_ROOT or norm:sub(1, #NOTES_ROOT + 1) == NOTES_ROOT .. "/"
+end
+
 local function close_org_buffers()
   local org_buffers = {}
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].filetype == "org" then
-      org_buffers[#org_buffers + 1] = buf
+    if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_is_loaded(buf) then
+      local name = vim.api.nvim_buf_get_name(buf)
+      if vim.bo[buf].filetype == "org" and under_notes_root(name) then
+        org_buffers[#org_buffers + 1] = buf
+      end
     end
   end
 
   if #org_buffers == 0 then
-    vim.notify("Orgmode: no org buffers to close", vim.log.levels.INFO)
+    vim.notify("Orgmode: no org buffers under notes root to close", vim.log.levels.INFO)
     return
   end
 
   local target = usable_non_note_buffer()
   for _, buf in ipairs(org_buffers) do
     if not save_note_buffer(buf) then
+      vim.notify("Orgmode: save failed; aborting note close", vim.log.levels.ERROR)
       return
     end
     local wins = vim.fn.win_findbuf(buf)
@@ -80,14 +89,12 @@ local function close_org_buffers()
       if vim.api.nvim_win_is_valid(win) then
         local cur = vim.api.nvim_get_current_win()
         if win == cur then
-          vim.api.nvim_set_current_win(vim.fn.win_getid(vim.fn.win_findbuf(target)[1] or vim.api.nvim_get_current_win()))
+          if vim.api.nvim_win_is_valid(vim.fn.win_getid(vim.fn.win_findbuf(target)[1] or vim.api.nvim_get_current_win())) then
+            vim.api.nvim_set_current_win(vim.fn.win_getid(vim.fn.win_findbuf(target)[1] or vim.api.nvim_get_current_win()))
+          end
         end
         vim.api.nvim_win_set_buf(win, target)
       end
-    end
-    if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_option(buf, "modified") then
-      vim.notify("Orgmode: save failed; aborting close for note buffer", vim.log.levels.ERROR)
-      return
     end
     vim.api.nvim_buf_delete(buf, { force = true })
   end
