@@ -37,6 +37,8 @@ end
 require("trouble").setup({
   modes = {
     lsp_base = {
+      win = { position = "right", size = 40 },
+      focus = false,
       filter = dedupe_lsp_locations,
     },
     lsp = {
