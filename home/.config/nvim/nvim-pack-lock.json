@@ -60,6 +60,10 @@
       "src": "https://github.com/MagicDuck/grug-far.nvim.git",
       "version": "'main'"
     },
+    "lua-utils.nvim": {
+      "rev": "e565749421f4bbb5d2e85e37c3cef9d56553d8bd",
+      "src": "https://github.com/nvim-neorg/lua-utils.nvim.git"
+    },
     "lualine.nvim": {
       "rev": "221ce6b2d999187044529f49da6554a92f740a96",
       "src": "https://github.com/nvim-lualine/lualine.nvim.git",
@@ -79,6 +83,10 @@
       "rev": "2a6940af80375532e5e9e7c1f2fc6319a1b7a69d",
       "src": "https://github.com/mason-org/mason.nvim.git",
       "version": "'main'"
+    },
+    "mini.ai": {
+      "rev": "c2e6e88a9de01b5aec5c3cffee1277b9ac8a6d69",
+      "src": "https://github.com/nvim-mini/mini.ai.git"
     },
     "mini.animate": {
       "rev": "74d003a30c0c37c23015032516237c8cad09af9f",
@@ -105,6 +113,10 @@
       "src": "https://github.com/NeogitOrg/neogit.git",
       "version": "'master'"
     },
+    "neorg": {
+      "rev": "a09e0bb9b32e2d0406d4503ae8c1a7ad2ca83eae",
+      "src": "https://github.com/nvim-neorg/neorg.git"
+    },
     "noice.nvim": {
       "rev": "7bfd942445fb63089b59f97ca487d605e715f155",
       "src": "https://github.com/folke/noice.nvim.git",
@@ -125,6 +137,10 @@
       "src": "https://github.com/neovim/nvim-lspconfig.git",
       "version": "'master'"
     },
+    "nvim-nio": {
+      "rev": "5a3a06e5df34f1b4fc1500622b10620c49c60da6",
+      "src": "https://github.com/nvim-neotest/nvim-nio.git"
+    },
     "nvim-treesitter": {
       "rev": "37e52c733ada9d8d544d53a763140ef1ba404353",
       "src": "https://github.com/nvim-treesitter/nvim-treesitter.git",
@@ -140,10 +156,19 @@
       "src": "https://github.com/windwp/nvim-ts-autotag.git",
       "version": "'main'"
     },
+    "orgmode": {
+      "rev": "08c3ea6ca3745d49435378cddfa93d06e0b39574",
+      "src": "https://github.com/nvim-orgmode/orgmode.git",
+      "version": "'master'"
+    },
     "overseer.nvim": {
       "rev": "a93d9f6d6defdac4bcd6d2c8ba988650e42e0a0e",
       "src": "https://github.com/stevearc/overseer.nvim.git",
       "version": "'master'"
+    },
+    "pathlib.nvim": {
+      "rev": "57e5598af6fe253761c1b48e0b59b7cd6699e2c1",
+      "src": "https://github.com/pysan3/pathlib.nvim.git"
     },
     "persistence.nvim": {
       "rev": "b20b2a7887bd39c1a356980b45e03250f3dce49c",
