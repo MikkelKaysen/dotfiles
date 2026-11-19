@@ -51,8 +51,8 @@ Snacks.setup({
   scroll = { enabled = false }, -- disabled: mini.animate handles scroll animation
   statuscolumn = { enabled = false }, -- set in config/options.lua
   terminal = {
-    position = "float",
     win = {
+      position = "float",
       keys = {
         nav_h = { "<C-h>", term_nav("h"), desc = "Go to Left Window", expr = true, mode = "t" },
         nav_j = { "<C-j>", term_nav("j"), desc = "Go to Lower Window", expr = true, mode = "t" },
