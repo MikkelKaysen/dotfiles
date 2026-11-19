@@ -34,62 +34,188 @@ local function save_note_buffer(buf)
   return true
 end
 
-local function usable_non_note_buffer()
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_is_loaded(buf) then
-      local ft = vim.bo[buf].filetype
-      if ft ~= "org" and ft ~= "orgagenda" and ft ~= "orgmode" and vim.bo[buf].buflisted then
-        return buf
-      end
-    end
-  end
-
-  local newbuf = vim.api.nvim_create_buf(true, true)
-  vim.api.nvim_buf_set_name(newbuf, "org-closer-buffer")
-  return newbuf
-end
-
 local function under_notes_root(path)
   local norm = vim.fs.normalize(path or "")
   return norm == NOTES_ROOT or norm:sub(1, #NOTES_ROOT + 1) == NOTES_ROOT .. "/"
 end
 
+local function is_note_buffer(buf)
+  if not vim.api.nvim_buf_is_valid(buf) or not vim.api.nvim_buf_is_loaded(buf) then
+    return false
+  end
+
+  local name = vim.api.nvim_buf_get_name(buf)
+  return vim.bo[buf].filetype == "org" and under_notes_root(name)
+end
+
+local function is_capture_buffer(buf)
+  if not vim.api.nvim_buf_is_valid(buf) then
+    return false
+  end
+  return vim.b[buf].org_capture == true
+end
+
+local function is_org_ui_buffer(buf)
+  if not vim.api.nvim_buf_is_valid(buf) or not vim.api.nvim_buf_is_loaded(buf) then
+    return false
+  end
+
+  local ft = vim.bo[buf].filetype
+  if ft == "orgagenda" or ft == "orghelp" then
+    return true
+  end
+
+  if vim.b[buf].__org_edit_special_ctx then
+    return true
+  end
+
+  local name = vim.api.nvim_buf_get_name(buf)
+  if name and vim.fn.fnamemodify(name, ":t") == "orgcalendar" then
+    return true
+  end
+
+  if ft == "org" and not under_notes_root(name) then
+    return true
+  end
+
+  return false
+end
+
+local function is_usable_non_note_buffer(buf)
+  if not vim.api.nvim_buf_is_valid(buf) or not vim.api.nvim_buf_is_loaded(buf) then
+    return false
+  end
+  if not vim.bo[buf].buflisted then
+    return false
+  end
+
+  local ft = vim.bo[buf].filetype
+  if ft == "org" or ft == "orgagenda" or ft == "orghelp" or ft == "orgmode" or is_capture_buffer(buf) then
+    return false
+  end
+
+  local name = vim.api.nvim_buf_get_name(buf)
+  if name ~= "" or vim.bo[buf].modified then
+    return true
+  end
+
+  return false
+end
+
+local function close_window_if_valid(win)
+  if win and vim.api.nvim_win_is_valid(win) then
+    pcall(vim.api.nvim_win_close, win, false)
+  end
+end
+
 local function close_org_buffers()
-  local org_buffers = {}
-  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_is_loaded(buf) then
-      local name = vim.api.nvim_buf_get_name(buf)
-      if vim.bo[buf].filetype == "org" and under_notes_root(name) then
-        org_buffers[#org_buffers + 1] = buf
+  local capture_wins = {}
+  for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+    if vim.api.nvim_win_is_valid(win) then
+      local buf = vim.api.nvim_win_get_buf(win)
+      if is_capture_buffer(buf) then
+        capture_wins[#capture_wins + 1] = win
       end
     end
   end
 
-  if #org_buffers == 0 then
-    vim.notify("Orgmode: no org buffers under notes root to close", vim.log.levels.INFO)
-    return
+  for _, win in ipairs(capture_wins) do
+    close_window_if_valid(win)
   end
 
-  local target = usable_non_note_buffer()
-  for _, buf in ipairs(org_buffers) do
-    if not save_note_buffer(buf) then
-      vim.notify("Orgmode: save failed; aborting note close", vim.log.levels.ERROR)
-      return
+  vim.schedule(function()
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_is_valid(buf) and is_capture_buffer(buf) then
+        vim.notify("Orgmode: capture still open; aborting note close", vim.log.levels.INFO)
+        return
+      end
     end
-    local wins = vim.fn.win_findbuf(buf)
-    for _, win in ipairs(wins) do
+
+    local ui_wins = {}
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
       if vim.api.nvim_win_is_valid(win) then
-        local cur = vim.api.nvim_get_current_win()
-        if win == cur then
-          if vim.api.nvim_win_is_valid(vim.fn.win_getid(vim.fn.win_findbuf(target)[1] or vim.api.nvim_get_current_win())) then
-            vim.api.nvim_set_current_win(vim.fn.win_getid(vim.fn.win_findbuf(target)[1] or vim.api.nvim_get_current_win()))
+        local buf = vim.api.nvim_win_get_buf(win)
+        if is_org_ui_buffer(buf) then
+          ui_wins[#ui_wins + 1] = win
+        end
+      end
+    end
+    for _, win in ipairs(ui_wins) do
+      close_window_if_valid(win)
+    end
+
+    local note_bufs = {}
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+      if is_note_buffer(buf) then
+        note_bufs[#note_bufs + 1] = buf
+      end
+    end
+
+    for _, buf in ipairs(note_bufs) do
+      if not save_note_buffer(buf) then
+        vim.notify("Orgmode: save failed; aborting note close", vim.log.levels.ERROR)
+        return
+      end
+    end
+
+    local usable_win = nil
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      if vim.api.nvim_win_is_valid(win) then
+        local buf = vim.api.nvim_win_get_buf(win)
+        if is_usable_non_note_buffer(buf) then
+          usable_win = win
+          break
+        end
+      end
+    end
+
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      if vim.api.nvim_win_is_valid(win) then
+        local buf = vim.api.nvim_win_get_buf(win)
+        if is_note_buffer(buf) or is_org_ui_buffer(buf) or is_capture_buffer(buf) then
+          if usable_win and win == usable_win then
+            -- preserve a usable normal buffer/window
+          else
+            close_window_if_valid(win)
           end
         end
-        vim.api.nvim_win_set_buf(win, target)
       end
     end
-    vim.api.nvim_buf_delete(buf, { force = true })
-  end
+
+    local survivor = usable_win
+    if not survivor then
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        if vim.api.nvim_win_is_valid(win) then
+          local buf = vim.api.nvim_win_get_buf(win)
+          if not is_note_buffer(buf) and not is_org_ui_buffer(buf) and not is_capture_buffer(buf) then
+            survivor = win
+            break
+          end
+        end
+      end
+    end
+    if not survivor then
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        if vim.api.nvim_win_is_valid(win) then
+          survivor = win
+          break
+        end
+      end
+    end
+
+    if survivor and vim.api.nvim_win_is_valid(survivor) then
+      vim.api.nvim_set_current_win(survivor)
+      if not usable_win then
+        require("snacks").dashboard()
+      end
+    end
+
+    for _, buf in ipairs(note_bufs) do
+      if vim.api.nvim_buf_is_valid(buf) and #vim.fn.win_findbuf(buf) == 0 then
+        pcall(vim.api.nvim_buf_delete, buf, { force = false })
+      end
+    end
+  end)
 end
 
 require("orgmode").setup({
