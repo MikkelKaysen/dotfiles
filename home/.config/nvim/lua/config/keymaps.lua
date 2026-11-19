@@ -191,28 +191,14 @@ map("n", "<leader>pc", function()
     return
   end
 
-  vim.ui.select(names, {
-    prompt = "Remove inactive plugin(s)?",
+  vim.ui.select({ "Yes", "No" }, {
+    prompt = "Remove inactive plugins?\n" .. table.concat(names, "\n"),
   }, function(choice)
-    if choice == nil then
+    if choice ~= "Yes" then
       return
     end
 
-    vim.ui.select({ "Yes", "No" }, {
-      prompt = ("Remove inactive plugin `%s`?"):format(choice),
-    }, function(answer)
-      if answer ~= "Yes" then
-        return
-      end
-
-      local ok, err = pcall(vim.pack.del, { choice })
-      if not ok then
-        vim.notify(("Failed to remove inactive plugin `%s`: %s"):format(choice, err), vim.log.levels.ERROR)
-        return
-      end
-
-      vim.notify(("Removed inactive plugin `%s`."):format(choice), vim.log.levels.INFO)
-    end)
+    remove_inactive_plugins(names)
   end)
 end, { desc = "Clean up inactive plugins" })
 
