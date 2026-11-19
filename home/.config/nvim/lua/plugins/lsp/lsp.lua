@@ -3,11 +3,10 @@
 -- the LSP keymaps (ported from LazyVim's plugins/lsp/init.lua).
 --
 -- Keymaps: Neovim 0.12 provides native LSP defaults:
--- grn (rename), gra (code action, n/x), grr (references),
--- gri (implementation), grt (type definition), grx (codelens), gO (document
--- symbols), and insert-mode <C-s> (signature help). They are NOT redefined
--- here. The `lsp.set` block below only adds custom, capability-filtered maps
--- (navigation via gd/gD/gK/gai/gao, and the other leader/bracket maps).
+-- grn (rename), gra (code action, n/x), gri (implementation), grt (type
+-- definition), grx (codelens), gO (document symbols), and insert-mode <C-s>
+-- (signature help). `grr` is overridden below with a buffer-local,
+-- capability-filtered quickfix view; the remaining native defaults stay as-is.
 --
 -- Per-server configs: plugins/lsp/languages.lua
 -- Server install + enable: plugins/lsp/mason.lua (mason-lspconfig)
