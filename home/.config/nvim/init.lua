@@ -16,12 +16,12 @@ require("plugins.picker")
 
 require("plugins.ui.catppuccin")
 require("plugins.ui.which-key")
+require("plugins.ui.trouble")
 require("plugins.ui.lualine")
 require("plugins.ui.bufferline")
 require("plugins.ui.noice")
 require("plugins.ui.gitsigns")
 require("plugins.ui.flash")
-require("plugins.ui.trouble")
 require("plugins.ui.misc")
 
 -- git: neogit + git worktrees (wrappers for the <leader>g maps in config/keymaps.lua)
