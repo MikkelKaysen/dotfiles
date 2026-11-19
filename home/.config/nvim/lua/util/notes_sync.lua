@@ -82,7 +82,7 @@ local function in_scope(path)
     return false
   end
   local rel = canon:sub(#cfg.root + 2)
-  return rel:match("^personal/.+%.norg$") ~= nil or rel:match("^work/.+%.norg$") ~= nil
+  return rel:match("^.+%.org$") ~= nil
 end
 
 -- Any loaded, modified buffer under the notes root (by canonical path) blocks the run.
