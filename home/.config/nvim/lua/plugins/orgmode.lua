@@ -128,12 +128,16 @@ local function is_usable_non_note_buffer(buf, win)
 end
 
 local function close_window_if_valid(win, force)
-  if win and vim.api.nvim_win_is_valid(win) then
-    local ok, err = pcall(vim.api.nvim_win_close, win, force or false)
-    if not ok then
-      vim.notify("Orgmode: failed to close window: " .. tostring(err), vim.log.levels.WARN)
-    end
+  if not win or not vim.api.nvim_win_is_valid(win) then
+    return true
   end
+
+  local ok, err = pcall(vim.api.nvim_win_close, win, force or false)
+  if not ok then
+    vim.notify("Orgmode: failed to close window: " .. tostring(err), vim.log.levels.WARN)
+    return false
+  end
+  return true
 end
 
 local function close_org_buffers()
@@ -150,7 +154,9 @@ local function close_org_buffers()
   end
 
   for _, win in ipairs(capture_wins) do
-    close_window_if_valid(win, true)
+    if not close_window_if_valid(win, true) then
+      return
+    end
   end
 
   vim.schedule(function()
@@ -175,7 +181,9 @@ local function close_org_buffers()
       end
     end
     for _, win in ipairs(ui_wins) do
-      close_window_if_valid(win, true)
+      if not close_window_if_valid(win, true) then
+        return
+      end
     end
 
     local note_bufs = {}
@@ -224,7 +232,9 @@ local function close_org_buffers()
             if usable_win and win == usable_win then
               -- preserve a usable non-note window
             else
-              close_window_if_valid(win, true)
+              if not close_window_if_valid(win, true) then
+                return
+              end
             end
           end
         end
@@ -271,19 +281,11 @@ local function close_org_buffers()
     vim.cmd("only")
     require("snacks").dashboard()
 
-    local dashboard_buf = vim.api.nvim_win_get_buf(vim.api.nvim_get_current_win())
-    if dashboard_buf and vim.api.nvim_buf_is_valid(dashboard_buf) then
-      local name = vim.api.nvim_buf_get_name(dashboard_buf)
-      if name == "" and not vim.bo[dashboard_buf].modified and #vim.api.nvim_buf_get_lines(dashboard_buf, 0, -1, false) == 1 and vim.api.nvim_buf_get_lines(dashboard_buf, 0, 1, false)[1] == "" and not vim.api.nvim_win_get_config(vim.api.nvim_get_current_win()).relative then
-        pcall(vim.api.nvim_buf_delete, dashboard_buf, { force = true })
-      end
-    end
-
     if vim.api.nvim_buf_is_valid(survivor_buf) then
       local name = vim.api.nvim_buf_get_name(survivor_buf)
       local lines = vim.api.nvim_buf_get_lines(survivor_buf, 0, -1, false)
-      if name == "" and not vim.bo[survivor_buf].modified and #lines == 1 and lines[1] == "" then
-        pcall(vim.api.nvim_buf_delete, survivor_buf, { force = true })
+      if name == "" and not vim.bo[survivor_buf].modified and #lines == 1 and lines[1] == "" and #vim.fn.win_findbuf(survivor_buf) == 0 then
+        pcall(vim.api.nvim_buf_delete, survivor_buf, { force = false })
       end
     end
 
