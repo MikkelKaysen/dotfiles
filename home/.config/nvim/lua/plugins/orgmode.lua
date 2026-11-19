@@ -137,3 +137,5 @@ vim.keymap.set("n", "<leader>os", function()
   vim.cmd.NotesSync()
 end, { desc = "NotesSync" })
 vim.keymap.set("n", "<leader>oq", close_org_buffers, { desc = "Close note buffers" })
+
+require("which-key").add({ { "<leader>o", group = "org" } }, { notify = false })
