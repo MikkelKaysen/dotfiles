@@ -164,8 +164,8 @@ local function safe_rel_path(rel)
       return false, "unsafe path component"
     end
   end
-  if not (rel:match("^personal/.+%.norg$") or rel:match("^work/.+%.norg$")) then
-    return false, "path outside personal/ or work/ .norg files"
+  if not rel:match("^.+%.org$") then
+    return false, "path outside repo .org files"
   end
   local parts = vim.split(rel, "/", { plain = true })
   local acc = cfg.root
@@ -578,7 +578,7 @@ function M.setup(opts)
   -- The first note of the session triggers one sync.
   vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
     group = group,
-    pattern = "*.norg",
+    pattern = "**/*.org",
     callback = function(ev)
       if not st.initial_done and in_scope(vim.api.nvim_buf_get_name(ev.buf)) then
         st.initial_done = true
@@ -592,7 +592,7 @@ function M.setup(opts)
   -- Saving a note (re)arms the debounce; a deferred run resumes on the next save.
   vim.api.nvim_create_autocmd("BufWritePost", {
     group = group,
-    pattern = "*.norg",
+    pattern = "**/*.org",
     callback = function(ev)
       if in_scope(vim.api.nvim_buf_get_name(ev.buf)) then
         arm_timer()
