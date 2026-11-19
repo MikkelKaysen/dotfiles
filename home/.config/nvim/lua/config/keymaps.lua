@@ -157,6 +157,69 @@ map("n", "<leader>pM", function()
   end
 end, { desc = "Update Mason tools in background" })
 
+local function get_inactive_plugins()
+  local plugins = vim.pack.get(nil, { info = false }) or {}
+  local names = {}
+  for _, plugin in ipairs(plugins) do
+    if plugin and plugin.active == false and plugin.spec and plugin.spec.name then
+      names[#names + 1] = plugin.spec.name
+    end
+  end
+  table.sort(names)
+  return names
+end
+
+local function remove_inactive_plugins(names)
+  if #names == 0 then
+    vim.notify("No inactive plugins to remove.", vim.log.levels.INFO)
+    return
+  end
+
+  local ok, err = pcall(vim.pack.del, names)
+  if not ok then
+    vim.notify(("Failed to remove inactive plugins: %s"):format(err), vim.log.levels.ERROR)
+    return
+  end
+
+  vim.notify(("Removed %d inactive plugin(s): %s"):format(#names, table.concat(names, ", ")), vim.log.levels.INFO)
+end
+
+map("n", "<leader>pc", function()
+  local names = get_inactive_plugins()
+  if #names == 0 then
+    vim.notify("No inactive plugins to remove.", vim.log.levels.INFO)
+    return
+  end
+
+  vim.ui.select(names, {
+    prompt = "Remove inactive plugin(s)?",
+  }, function(choice)
+    if choice == nil then
+      return
+    end
+
+    vim.ui.select({ "Yes", "No" }, {
+      prompt = ("Remove inactive plugin `%s`?"):format(choice),
+    }, function(answer)
+      if answer ~= "Yes" then
+        return
+      end
+
+      local ok, err = pcall(vim.pack.del, { choice })
+      if not ok then
+        vim.notify(("Failed to remove inactive plugin `%s`: %s"):format(choice, err), vim.log.levels.ERROR)
+        return
+      end
+
+      vim.notify(("Removed inactive plugin `%s`."):format(choice), vim.log.levels.INFO)
+    end)
+  end)
+end, { desc = "Clean up inactive plugins" })
+
+map("n", "<leader>pC", function()
+  remove_inactive_plugins(get_inactive_plugins())
+end, { desc = "Remove inactive plugins" })
+
 -- new file
 map("n", "<leader>fn", "<cmd>enew<cr>", { desc = "New File" })
 
