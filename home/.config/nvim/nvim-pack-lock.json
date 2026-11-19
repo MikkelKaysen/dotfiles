@@ -105,11 +105,6 @@
       "src": "https://github.com/NeogitOrg/neogit.git",
       "version": "'master'"
     },
-    "neorg": {
-      "rev": "a09e0bb9b32e2d0406d4503ae8c1a7ad2ca83eae",
-      "src": "https://github.com/nvim-neorg/neorg.git",
-      "version": "'v9.6.4'"
-    },
     "noice.nvim": {
       "rev": "7bfd942445fb63089b59f97ca487d605e715f155",
       "src": "https://github.com/folke/noice.nvim.git",
