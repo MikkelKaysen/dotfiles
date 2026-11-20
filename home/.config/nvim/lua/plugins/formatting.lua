@@ -177,7 +177,7 @@ require("overseer").setup({
   },
 })
 
-Snacks.keymap.set("n", "<leader>ow", "<cmd>OverseerToggle!<cr>", { desc = "Task list" })
-Snacks.keymap.set("n", "<leader>oo", "<cmd>OverseerRun<cr>", { desc = "Run task" })
-Snacks.keymap.set("n", "<leader>ot", "<cmd>OverseerTaskAction<cr>", { desc = "Task action" })
-require("which-key").add({ { "<leader>o", group = "overseer" } }, { notify = false })
+Snacks.keymap.set("n", "<leader>rw", "<cmd>OverseerToggle!<cr>", { desc = "Task list" })
+Snacks.keymap.set("n", "<leader>ro", "<cmd>OverseerRun<cr>", { desc = "Run task" })
+Snacks.keymap.set("n", "<leader>rt", "<cmd>OverseerTaskAction<cr>", { desc = "Task action" })
+require("which-key").add({ { "<leader>r", group = "overseer" } }, { notify = false })

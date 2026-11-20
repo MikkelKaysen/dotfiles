@@ -9,8 +9,8 @@
 require("todo-comments").setup({})
 Snacks.keymap.set("n", "]t", function() require("todo-comments").jump_next() end, { desc = "Next Todo Comment" })
 Snacks.keymap.set("n", "[t", function() require("todo-comments").jump_prev() end, { desc = "Previous Todo Comment" })
-Snacks.keymap.set("n", "<leader>xt", "<cmd>Trouble todo toggle<cr>", { desc = "Todo (Trouble)" })
-Snacks.keymap.set("n", "<leader>xT", "<cmd>Trouble todo toggle filter = {tag = {TODO,FIX,FIXME}}<cr>", { desc = "Todo/Fix/Fixme (Trouble)" })
+Snacks.keymap.set("n", "<leader>xt", function() require("trouble").toggle({ mode = "todo" }) end, { desc = "Todo (Trouble)" })
+Snacks.keymap.set("n", "<leader>xT", function() require("trouble").toggle({ mode = "todo", filter = { tag = { "TODO", "FIX", "FIXME" } } }) end, { desc = "Todo/Fix/Fixme (Trouble)" })
 
 -- automatically add closing tags for HTML and JSX
 require("nvim-ts-autotag").init()

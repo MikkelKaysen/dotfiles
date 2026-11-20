@@ -4,20 +4,82 @@
 -- same ordering as LazyVim's lazy.nvim key registration.
 -- ---------------------------------------------------------------------------
 
+local function dedupe_lsp_locations(items)
+  local seen = {}
+  local filtered = {}
+
+  for _, item in ipairs(items or {}) do
+    if item then
+      local filename = item.filename or (item.buf and vim.api.nvim_buf_get_name(item.buf)) or ""
+      if type(filename) == "string" and filename ~= "" then
+        filename = vim.fs.normalize(filename)
+      end
+
+      local pos = item.pos or { 1, 0 }
+      local end_pos = item.end_pos or pos
+
+      local start_line = tonumber(pos[1]) or 1
+      local start_col = tonumber(pos[2]) or 0
+      local end_line = tonumber(end_pos[1]) or start_line
+      local end_col = tonumber(end_pos[2]) or start_col
+      local key = table.concat({ filename, start_line, start_col, end_line, end_col }, "\x1f")
+
+      if not seen[key] then
+        seen[key] = true
+        filtered[#filtered + 1] = item
+      end
+    end
+  end
+
+  return filtered
+end
+
 require("trouble").setup({
   modes = {
+    lsp_base = {
+      win = { position = "right", size = 40 },
+      focus = false,
+      filter = dedupe_lsp_locations,
+    },
     lsp = {
-      win = { position = "right" },
+      win = { position = "right", size = 40 },
+      focus = false,
+    },
+    symbols = {
+      win = { position = "right", size = 40 },
+      focus = false,
     },
   },
 })
 
-Snacks.keymap.set("n", "<leader>xx", "<cmd>Trouble diagnostics toggle<cr>", { desc = "Diagnostics (Trouble)" })
-Snacks.keymap.set("n", "<leader>xX", "<cmd>Trouble diagnostics toggle filter.buf=0<cr>", { desc = "Buffer Diagnostics (Trouble)" })
-Snacks.keymap.set("n", "<leader>cs", "<cmd>Trouble symbols toggle<cr>", { desc = "Symbols (Trouble)" })
-Snacks.keymap.set("n", "<leader>cS", "<cmd>Trouble lsp toggle<cr>", { desc = "LSP references/definitions/... (Trouble)" })
-Snacks.keymap.set("n", "<leader>xL", "<cmd>Trouble loclist toggle<cr>", { desc = "Location List (Trouble)" })
-Snacks.keymap.set("n", "<leader>xQ", "<cmd>Trouble qflist toggle<cr>", { desc = "Quickfix List (Trouble)" })
+local function toggle_trouble_mode(mode)
+  local trouble = require("trouble")
+  local other_mode = mode == "symbols" and "lsp" or "symbols"
+  local mode_open = trouble.is_open({ mode = mode })
+  local other_open = trouble.is_open({ mode = other_mode })
+
+  if mode_open and not other_open then
+    trouble.close({ mode = mode })
+    return
+  end
+
+  if other_open then
+    trouble.close({ mode = other_mode })
+  end
+
+  if mode_open then
+    return
+  end
+
+  trouble.open({ mode = mode })
+end
+
+Snacks.keymap.set("n", "<leader>xx", function() require("trouble").toggle({ mode = "diagnostics" }) end, { desc = "Diagnostics (Trouble)" })
+Snacks.keymap.set("n", "<leader>xX", function() require("trouble").toggle({ mode = "diagnostics", filter = { buf = 0 } }) end, { desc = "Buffer Diagnostics (Trouble)" })
+Snacks.keymap.set("n", "<leader>cs", function() toggle_trouble_mode("symbols") end, { desc = "Symbols (Trouble)" })
+Snacks.keymap.set("n", "<leader>cS", function() toggle_trouble_mode("lsp") end, { desc = "LSP references/definitions/... (Trouble)" })
+Snacks.keymap.set("n", "<leader>xL", function() require("trouble").toggle({ mode = "loclist" }) end, { desc = "Location List (Trouble)" })
+Snacks.keymap.set("n", "<leader>xQ", function() require("trouble").toggle({ mode = "qflist" }) end, { desc = "Quickfix List (Trouble)" })
 Snacks.keymap.set("n", "[q", function()
   if require("trouble").is_open() then
     require("trouble").prev({ skip_groups = true, jump = true })

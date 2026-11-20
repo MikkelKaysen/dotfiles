@@ -1,9 +1,9 @@
--- Git sync for the Neorg notes repository.
+-- Git sync for the Org notes repository.
 --
--- Scope: only personal/**/*.norg and work/**/*.norg may be committed. Any other
--- change, staged content, conflict, or in-progress git operation stops the run.
--- Runs are serialized per session and guarded by a lock directory in the git dir.
--- Nothing is ever forced, reset, stashed, or auto-aborted.
+-- Scope: only **/*.org files anywhere under the repo root may be committed. Any
+-- other change, staged content, conflict, or in-progress git operation stops the
+-- run. Runs are serialized per session and guarded by a lock directory in the git
+-- dir. Nothing is ever forced, reset, stashed, or auto-aborted.
 --
 -- Pipeline: validate (no network) -> stage/commit (offline OK) -> pull --rebase -> push.
 -- A failed pull leaves the local commit in place; the next sync retries.
@@ -82,7 +82,7 @@ local function in_scope(path)
     return false
   end
   local rel = canon:sub(#cfg.root + 2)
-  return rel:match("^personal/.+%.norg$") ~= nil or rel:match("^work/.+%.norg$") ~= nil
+  return rel:match("^.+%.org$") ~= nil
 end
 
 -- Any loaded, modified buffer under the notes root (by canonical path) blocks the run.
@@ -152,7 +152,7 @@ local function parse_status(out)
   return entries
 end
 
--- Rejects absolute/parent paths, non-norg files, and any symlink or non-directory ancestor.
+-- Rejects absolute/parent paths, non-Org files, and any symlink or non-directory ancestor.
 -- Missing targets (deletions) are fine when their existing ancestors are real directories.
 ---@return boolean, string?
 local function safe_rel_path(rel)
@@ -164,8 +164,8 @@ local function safe_rel_path(rel)
       return false, "unsafe path component"
     end
   end
-  if not (rel:match("^personal/.+%.norg$") or rel:match("^work/.+%.norg$")) then
-    return false, "path outside personal/ or work/ .norg files"
+  if not rel:match("^.+%.org$") then
+    return false, "path outside repo .org files"
   end
   local parts = vim.split(rel, "/", { plain = true })
   local acc = cfg.root
@@ -578,7 +578,7 @@ function M.setup(opts)
   -- The first note of the session triggers one sync.
   vim.api.nvim_create_autocmd({ "BufReadPost", "BufNewFile" }, {
     group = group,
-    pattern = "*.norg",
+    pattern = "**/*.org",
     callback = function(ev)
       if not st.initial_done and in_scope(vim.api.nvim_buf_get_name(ev.buf)) then
         st.initial_done = true
@@ -592,7 +592,7 @@ function M.setup(opts)
   -- Saving a note (re)arms the debounce; a deferred run resumes on the next save.
   vim.api.nvim_create_autocmd("BufWritePost", {
     group = group,
-    pattern = "*.norg",
+    pattern = "**/*.org",
     callback = function(ev)
       if in_scope(vim.api.nvim_buf_get_name(ev.buf)) then
         arm_timer()
@@ -612,7 +612,7 @@ function M.setup(opts)
 
   vim.api.nvim_create_user_command("NotesSync", function()
     M.run("manual")
-  end, { desc = "Sync the Neorg notes repository (commit, pull --rebase, push)" })
+  end, { desc = "Sync the Org notes repository (commit, pull --rebase, push)" })
 end
 
 -- Exposed for fixture tests.

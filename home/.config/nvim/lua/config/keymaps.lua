@@ -102,6 +102,109 @@ map("n", "gcO", "O<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>", { desc = "Add Commen
 map("n", "<leader>pu", function()
   vim.pack.update()
 end, { desc = "Update Plugins" })
+map("n", "<leader>pU", function()
+  vim.pack.update(nil, { force = true })
+end, { desc = "Update Plugins without review prompt" })
+map("n", "<leader>pM", function()
+  local ok_registry, registry = pcall(require, "mason-registry")
+  if not ok_registry or not registry then
+    vim.notify("Mason registry is unavailable; unable to update installed tools.", vim.log.levels.ERROR)
+    return
+  end
+
+  local ok_refresh = pcall(registry.refresh, function(success)
+    if not success then
+      vim.notify("Failed to refresh the Mason registry.", vim.log.levels.ERROR)
+      return
+    end
+
+    local packages = registry.get_installed_packages() or {}
+    local updates = {}
+
+    for _, pkg in ipairs(packages) do
+      local installed = pkg:get_installed_version()
+      local latest = pkg:get_latest_version()
+      if installed and latest and installed ~= latest then
+        updates[#updates + 1] = {
+          pkg = pkg,
+          installed = installed,
+          latest = latest,
+        }
+      end
+    end
+
+    if #updates == 0 then
+      vim.notify("Mason tools are already up to date.", vim.log.levels.INFO)
+      return
+    end
+
+    vim.notify(("Updating %d Mason tool(s) in the background..."):format(#updates), vim.log.levels.INFO)
+
+    for _, item in ipairs(updates) do
+      item.pkg:install({ version = item.latest }, function(success)
+        if not success then
+          vim.notify(
+            ("Failed to update Mason package `%s` from %s to %s."):format(item.pkg.name, item.installed, item.latest),
+            vim.log.levels.ERROR
+          )
+        end
+      end)
+    end
+  end)
+
+  if not ok_refresh then
+    vim.notify("Failed to refresh the Mason registry.", vim.log.levels.ERROR)
+  end
+end, { desc = "Update Mason tools in background" })
+
+local function get_inactive_plugins()
+  local plugins = vim.pack.get(nil, { info = false }) or {}
+  local names = {}
+  for _, plugin in ipairs(plugins) do
+    if plugin and plugin.active == false and plugin.spec and plugin.spec.name then
+      names[#names + 1] = plugin.spec.name
+    end
+  end
+  table.sort(names)
+  return names
+end
+
+local function remove_inactive_plugins(names)
+  if #names == 0 then
+    vim.notify("No inactive plugins to remove.", vim.log.levels.INFO)
+    return
+  end
+
+  local ok, err = pcall(vim.pack.del, names)
+  if not ok then
+    vim.notify(("Failed to remove inactive plugins: %s"):format(err), vim.log.levels.ERROR)
+    return
+  end
+
+  vim.notify(("Removed %d inactive plugin(s): %s"):format(#names, table.concat(names, ", ")), vim.log.levels.INFO)
+end
+
+map("n", "<leader>pc", function()
+  local names = get_inactive_plugins()
+  if #names == 0 then
+    vim.notify("No inactive plugins to remove.", vim.log.levels.INFO)
+    return
+  end
+
+  vim.ui.select({ "Yes", "No" }, {
+    prompt = "Remove inactive plugins?\n" .. table.concat(names, "\n"),
+  }, function(choice)
+    if choice ~= "Yes" then
+      return
+    end
+
+    remove_inactive_plugins(names)
+  end)
+end, { desc = "Clean up inactive plugins" })
+
+map("n", "<leader>pC", function()
+  remove_inactive_plugins(get_inactive_plugins())
+end, { desc = "Remove inactive plugins" })
 
 -- new file
 map("n", "<leader>fn", "<cmd>enew<cr>", { desc = "New File" })
@@ -208,6 +311,52 @@ end, { desc = "Git Worktree (create)" })
 
 -- quit
 map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit All" })
+map("n", "<leader>qr", function()
+  local unsafe = {}
+
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_option(buf, "modified") then
+      local name = vim.api.nvim_buf_get_name(buf)
+      local buftype = vim.api.nvim_buf_get_option(buf, "buftype")
+      local org_capture = vim.b[buf] and vim.b[buf].org_capture
+      local org_edit = vim.b[buf] and vim.b[buf].__org_edit_special_ctx
+
+      if name == "" or buftype ~= "" or org_capture or org_edit then
+        local reason = name == "" and "unnamed"
+          or buftype ~= "" and ("nonempty buftype: " .. buftype)
+          or org_capture and "capture"
+          or org_edit and "source block edit"
+          or "temporary"
+
+        unsafe[#unsafe + 1] = string.format("buf %d (%s): %s", buf, name ~= "" and name or "unnamed", reason)
+      end
+    end
+  end
+
+  if #unsafe > 0 then
+    vim.notify("Refusing restart: modified temporary/non-regular buffer(s): " .. table.concat(unsafe, "; "), vim.log.levels.WARN)
+    return
+  end
+
+  local ok, err = pcall(vim.cmd.wall)
+  if not ok then
+    vim.notify(("Failed to save modified buffers before restart: %s"):format(err or "unknown error"), vim.log.levels.ERROR)
+    return
+  end
+
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_option(buf, "modified") then
+      local name = vim.api.nvim_buf_get_name(buf)
+      vim.notify(
+        ("Failed to save modified buffer before restart: %s"):format(name ~= "" and name or ("unnamed buffer " .. buf)),
+        vim.log.levels.ERROR
+      )
+      return
+    end
+  end
+
+  vim.cmd("restart")
+end, { desc = "Save and Restart Neovim" })
 
 -- highlights under cursor
 map("n", "<leader>ui", vim.show_pos, { desc = "Inspect Pos" })

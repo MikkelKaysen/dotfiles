@@ -34,9 +34,27 @@ permissions:
   - { action: shell, resource: "cargo build*", effect: allow }
   - { action: shell, resource: "make*", effect: allow }
   - { action: shell, resource: "node*", effect: allow }
-  - { action: shell, resource: "rm -rf*", effect: deny }
-  - { action: shell, resource: "git push*", effect: deny }
   - { action: shell, resource: "git reset --hard*", effect: deny }
+  - { action: shell, resource: "git push*", effect: deny }
+  - { action: shell, resource: "git * push*", effect: deny }
+  - { action: shell, resource: "git reset*", effect: deny }
+  - { action: shell, resource: "git * reset*", effect: deny }
+  - { action: shell, resource: "git clean*", effect: deny }
+  - { action: shell, resource: "git * clean*", effect: deny }
+  - { action: shell, resource: "git add .", effect: deny }
+  - { action: shell, resource: "git add -A*", effect: deny }
+  - { action: shell, resource: "git add --all*", effect: deny }
+  - { action: shell, resource: "git add -u*", effect: deny }
+  - { action: shell, resource: "git commit --amend*", effect: deny }
+  - { action: shell, resource: "git commit --no-verify*", effect: deny }
+  - { action: shell, resource: "git commit -n*", effect: deny }
+  - { action: shell, resource: "rm -rf*", effect: deny }
+  - { action: shell, resource: "kubectl*", effect: deny }
+  - { action: shell, resource: "terraform*", effect: deny }
+  - { action: shell, resource: "helm*", effect: deny }
+  - { action: shell, resource: "flux*", effect: deny }
+  - { action: shell, resource: "scw*", effect: deny }
+  - { action: subagent, resource: "*", effect: deny }
 ---
 
 # Refactorer
@@ -46,3 +64,5 @@ permissions:
 - Run the test suite after changing anything, don't assume it passes
 - Stay inside the stated scope of the task, don't touch unrelated files
 - If the fix reveals a bigger underlying problem, stop and report it instead of scope-creeping into a rewrite
+- Never commit, push, or stage changes, and never modify agent configuration, permissions, profiles, credentials, or launch settings
+- Never work around a denied operation through scripts, aliases, other tools, or other agents; report blocked actions instead

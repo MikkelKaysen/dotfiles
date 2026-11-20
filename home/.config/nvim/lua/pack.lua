@@ -31,11 +31,8 @@ local plugins = {
     { src = gh("nvim-lua/plenary.nvim"), version = "master" },
     { src = gh("MunifTanjim/nui.nvim"), version = "main" },
 
-    -- neorg (pinned tags; deps per neorg v9.6.4 rockspec: lua-utils 1.0.2, pathlib ~> 2.2, nio ~> 1.7)
-    { src = gh("nvim-neorg/neorg"), version = "v9.6.4" },
-    { src = gh("nvim-neorg/lua-utils.nvim"), version = "v1.0.2" },
-    { src = gh("pysan3/pathlib.nvim"), version = "v2.2.3" },
-    { src = gh("nvim-neotest/nvim-nio"), version = "v1.7.0" },
+    -- orgmode
+    { src = gh("nvim-orgmode/orgmode"), version = "master" },
 
     -- icons + text manipulation (standalone mini.* repos, as in the old install)
     { src = gh("nvim-mini/mini.icons"), version = "main" },

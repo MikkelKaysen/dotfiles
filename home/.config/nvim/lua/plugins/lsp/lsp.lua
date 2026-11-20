@@ -3,11 +3,10 @@
 -- the LSP keymaps (ported from LazyVim's plugins/lsp/init.lua).
 --
 -- Keymaps: Neovim 0.12 provides native LSP defaults:
--- grn (rename), gra (code action, n/x), grr (references),
--- gri (implementation), grt (type definition), grx (codelens), gO (document
--- symbols), and insert-mode <C-s> (signature help). They are NOT redefined
--- here. The `lsp.set` block below only adds custom, capability-filtered maps
--- (navigation via gd/gD/gK/gai/gao, and the other leader/bracket maps).
+-- grn (rename), gra (code action, n/x), gri (implementation), grt (type
+-- definition), grx (codelens), gO (document symbols), and insert-mode <C-s>
+-- (signature help). `grr` is overridden below with a buffer-local,
+-- capability-filtered quickfix view; the remaining native defaults stay as-is.
 --
 -- Per-server configs: plugins/lsp/languages.lua
 -- Server install + enable: plugins/lsp/mason.lua (mason-lspconfig)
@@ -89,6 +88,32 @@ lsp.set({}, {
   { "[[", function() Snacks.words.jump(-vim.v.count1) end, desc = "Prev Reference", has = "documentHighlight", enabled = function() return Snacks.words.is_enabled() end },
   { "<a-n>", function() Snacks.words.jump(vim.v.count1, true) end, desc = "Next Reference", has = "documentHighlight", enabled = function() return Snacks.words.is_enabled() end },
   { "<a-p>", function() Snacks.words.jump(-vim.v.count1, true) end, desc = "Prev Reference", has = "documentHighlight", enabled = function() return Snacks.words.is_enabled() end },
+  {
+    "grr",
+    function()
+      vim.lsp.buf.references(nil, {
+        on_list = function(what)
+          if not what or not what.items then
+            return
+          end
+          what.items = vim.list.unique(what.items, function(item)
+            return ("%s\0%d\0%d\0%d\0%d"):format(
+              item.filename or "",
+              item.lnum or 0,
+              item.col or 0,
+              item.end_lnum or 0,
+              item.end_col or 0
+            )
+          end)
+          vim.fn.setqflist({}, " ", what)
+          vim.cmd("botright copen")
+        end,
+      })
+    end,
+    desc = "References",
+    has = "references",
+    mode = "n",
+  },
 })
 
 -- Register the LSP formatter (fallback behind conform's primary)

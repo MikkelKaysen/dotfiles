@@ -6,7 +6,7 @@
       "version": "'master'"
     },
     "SchemaStore.nvim": {
-      "rev": "cb6074339e4a7057140912e308d93155e55d1410",
+      "rev": "a0479e8a6d5d3471899d2be630fd207f4804dc7d",
       "src": "https://github.com/b0o/SchemaStore.nvim.git",
       "version": "'main'"
     },
@@ -51,7 +51,7 @@
       "version": "'main'"
     },
     "gitsigns.nvim": {
-      "rev": "ef707fb93301a9b856f36eae4c8f56f5b988a794",
+      "rev": "c0862d382a35b7b45757d8d151a6a634c09bf3ce",
       "src": "https://github.com/lewis6991/gitsigns.nvim.git",
       "version": "'main'"
     },
@@ -59,11 +59,6 @@
       "rev": "91b7e58b6ffc6ddad5acb7a7c1df21257724449e",
       "src": "https://github.com/MagicDuck/grug-far.nvim.git",
       "version": "'main'"
-    },
-    "lua-utils.nvim": {
-      "rev": "e565749421f4bbb5d2e85e37c3cef9d56553d8bd",
-      "src": "https://github.com/nvim-neorg/lua-utils.nvim.git",
-      "version": "'v1.0.2'"
     },
     "lualine.nvim": {
       "rev": "221ce6b2d999187044529f49da6554a92f740a96",
@@ -76,7 +71,7 @@
       "version": "'master'"
     },
     "mason-lspconfig.nvim": {
-      "rev": "55eceab8975036ac43a4176cbfe0d4bf1ddae93f",
+      "rev": "97ccf96bb2e7adb5f82975068bd4c7307d2afa8a",
       "src": "https://github.com/mason-org/mason-lspconfig.nvim.git",
       "version": "'main'"
     },
@@ -85,39 +80,30 @@
       "src": "https://github.com/mason-org/mason.nvim.git",
       "version": "'main'"
     },
-    "mini.ai": {
-      "rev": "98a5d73937930a2bb08129020601ab8d5016d706",
-      "src": "https://github.com/nvim-mini/mini.ai.git"
-    },
     "mini.animate": {
-      "rev": "d2ffc9075044c6a2112d5bab344bfae0e464b014",
+      "rev": "74d003a30c0c37c23015032516237c8cad09af9f",
       "src": "https://github.com/nvim-mini/mini.animate.git",
       "version": "'main'"
     },
     "mini.icons": {
-      "rev": "eab3e692d796d78ea6ffc978d8a380ff26fcf4e3",
+      "rev": "fc90b3925a2a68282be06e28cfe0cbb366c75dad",
       "src": "https://github.com/nvim-mini/mini.icons.git",
       "version": "'main'"
     },
     "mini.pairs": {
-      "rev": "03eb1f0062a2cee5314d1ac3939246e4bb21352e",
+      "rev": "eea81afc1b4de898de9bb310c2225f9225fd42b9",
       "src": "https://github.com/nvim-mini/mini.pairs.git",
       "version": "'main'"
     },
     "mini.surround": {
-      "rev": "5357f00aca51a3b43e7775901b1ad9699f8c2678",
+      "rev": "c17f9e2b2d685376b8ae7bb2cd8bb51dc7cd6d98",
       "src": "https://github.com/nvim-mini/mini.surround.git",
       "version": "'main'"
     },
     "neogit": {
-      "rev": "ba2f33b64b996ff5530c4c45a3c432fb63aaa95b",
+      "rev": "17929b7b0b9c05fe3dfc788fbba9881eb9c1cbec",
       "src": "https://github.com/NeogitOrg/neogit.git",
       "version": "'master'"
-    },
-    "neorg": {
-      "rev": "a09e0bb9b32e2d0406d4503ae8c1a7ad2ca83eae",
-      "src": "https://github.com/nvim-neorg/neorg.git",
-      "version": "'v9.6.4'"
     },
     "noice.nvim": {
       "rev": "7bfd942445fb63089b59f97ca487d605e715f155",
@@ -135,17 +121,12 @@
       "version": "'master'"
     },
     "nvim-lspconfig": {
-      "rev": "443d92c6bea761ab54cdde46fb197a2b4d614bdd",
+      "rev": "4648fd8ba5c678d7e2db75ae44ffac269bb589d8",
       "src": "https://github.com/neovim/nvim-lspconfig.git",
       "version": "'master'"
     },
-    "nvim-nio": {
-      "rev": "5a3a06e5df34f1b4fc1500622b10620c49c60da6",
-      "src": "https://github.com/nvim-neotest/nvim-nio.git",
-      "version": "'v1.7.0'"
-    },
     "nvim-treesitter": {
-      "rev": "19bdfc04f40ed2ccb3340591d125f759b0406875",
+      "rev": "37e52c733ada9d8d544d53a763140ef1ba404353",
       "src": "https://github.com/nvim-treesitter/nvim-treesitter.git",
       "version": "'main'"
     },
@@ -159,15 +140,15 @@
       "src": "https://github.com/windwp/nvim-ts-autotag.git",
       "version": "'main'"
     },
+    "orgmode": {
+      "rev": "08c3ea6ca3745d49435378cddfa93d06e0b39574",
+      "src": "https://github.com/nvim-orgmode/orgmode.git",
+      "version": "'master'"
+    },
     "overseer.nvim": {
       "rev": "a93d9f6d6defdac4bcd6d2c8ba988650e42e0a0e",
       "src": "https://github.com/stevearc/overseer.nvim.git",
       "version": "'master'"
-    },
-    "pathlib.nvim": {
-      "rev": "57e5598af6fe253761c1b48e0b59b7cd6699e2c1",
-      "src": "https://github.com/pysan3/pathlib.nvim.git",
-      "version": "'v2.2.3'"
     },
     "persistence.nvim": {
       "rev": "b20b2a7887bd39c1a356980b45e03250f3dce49c",
@@ -180,7 +161,7 @@
       "version": "'master'"
     },
     "render-markdown.nvim": {
-      "rev": "9c235bedc4f96145e63fcad5b78cd78bce8822c4",
+      "rev": "a67f826164c38c836fc6060f32b275c4c43317a7",
       "src": "https://github.com/MeanderingProgrammer/render-markdown.nvim.git",
       "version": "'main'"
     },

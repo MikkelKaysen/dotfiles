@@ -11,25 +11,6 @@
 -- ---------------------------------------------------------------------------
 
 -- --- TypeScript (ts_ls) + Angular -------------------------------------------
--- @angular/language-server as a tsserver global plugin (mason package
--- "angular-language-server"). Only wired up once the package exists; on a
--- first run it is installed by mason and applies from the next start.
-local angular_plugin =
-  vim.fn.stdpath("data") .. "/mason/packages/angular-language-server/node_modules/@angular/language-server"
-if vim.fn.isdirectory(angular_plugin) == 1 then
-  vim.lsp.config("ts_ls", {
-    init_options = {
-      globalPlugins = {
-        {
-          name = "@angular/language-server",
-          location = angular_plugin,
-          enableForWorkspaceTypeScriptVersions = false,
-        },
-      },
-    },
-  })
-end
-
 -- angularls: disable renaming (HACK: duplicate rename popups, from LazyVim)
 Snacks.util.lsp.on({ name = "angularls" }, function(_, client)
   client.server_capabilities.renameProvider = false
@@ -92,7 +73,7 @@ vim.filetype.add({
 
 -- render-markdown: nicer markdown rendering
 vim.api.nvim_create_autocmd("FileType", {
-  pattern = { "markdown", "norg", "rmd", "org", "codecompanion" },
+  pattern = { "markdown", "rmd", "org", "codecompanion" },
   callback = function()
     require("render-markdown").setup({
       code = {
