@@ -117,4 +117,4 @@ lsp.set({}, {
 })
 
 -- Register the LSP formatter (fallback behind conform's primary)
-require("util.format").register(lsp.formatter())
+require("util.format").register(lsp.formatter({ primary = true }))
