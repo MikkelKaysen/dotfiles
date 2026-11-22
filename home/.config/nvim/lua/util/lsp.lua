@@ -53,7 +53,7 @@ function M.formatter(opts)
     format = function(buf)
       vim.lsp.buf.format({
         bufnr = buf,
-        filter = opts.filter or nil,
+        filter = opts.filter and function(client) return client.name == opts.filter end or nil,
         timeout_ms = 3000,
       })
     end,
