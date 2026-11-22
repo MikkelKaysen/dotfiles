@@ -96,14 +96,16 @@ sync_color_scheme = true
     [theme.templates]
     builtin_ids = [ "gtk3", "gtk4", "kcolorscheme", "kitty", "qt", "alacritty", "hyprland" ]
 
-
-[widget.keybinds]
-type = "kenn/keybind-cheatsheet:keybinds"
-glyph = "keyboard"
+[widget.battery]
+hide_when_plugged = true
 
 [widget.clock]
 color = "secondary"
 format = "{:%H:%M %A %m/%d/%y}"
+
+[widget.keybinds]
+type = "kenn/keybind-cheatsheet:keybinds"
+glyph = "keyboard"
 
 [widget.launcher]
 color = "secondary"
