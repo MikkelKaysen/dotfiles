@@ -3,7 +3,7 @@
 -- friendly-snippets (ported from LazyVim's blink + luasnip extras).
 -- Deferred to the first InsertEnter/CmdlineEnter.
 -- The Rust fuzzy library is built once with `require('blink.cmp').build():pwait()`
--- (vim.pack has no build hook); see :checkhealth blink.
+-- (vim.pack has no build hook); see :checkhealth blink.cmp.
 -- org.nvim's blink source ("Org") is enabled for org buffers only.
 -- ---------------------------------------------------------------------------
 
