@@ -202,7 +202,7 @@ map("n", "<leader>Pc", function()
   end)
 end, { desc = "Clean up inactive plugins" })
 
-map("n", "<leader>pC", function()
+map("n", "<leader>PC", function()
   remove_inactive_plugins(get_inactive_plugins())
 end, { desc = "Remove inactive plugins" })
 
