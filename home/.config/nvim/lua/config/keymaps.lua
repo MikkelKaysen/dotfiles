@@ -99,10 +99,10 @@ map("n", "gco", "o<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>", { desc = "Add Commen
 map("n", "gcO", "O<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>", { desc = "Add Comment Above" })
 
 -- packages (replaces <leader>l Lazy)
-map("n", "<leader>pu", function()
+map("n", "<leader>Pu", function()
   vim.pack.update()
 end, { desc = "Update Plugins" })
-map("n", "<leader>pU", function()
+map("n", "<leader>PU", function()
   vim.pack.update(nil, { force = true })
 end, { desc = "Update Plugins without review prompt" })
 map("n", "<leader>pM", function()
