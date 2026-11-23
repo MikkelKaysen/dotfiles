@@ -4,7 +4,7 @@ ui_scale = 1.4
 [bar.default]
 center = [ "workspaces", "spacer_1", "active_window" ]
 concave_edge_corners = true
-end = [ "media", "spacer_1", "tray", "notifications", "network", "volume", "keybinds", "session" ]
+end = [ "media", "spacer_1", "tray", "notifications", "network", "battery", "volume", "keybinds", "session" ]
 margin_edge = 0
 margin_ends = 0
 radius_bottom_left = 12
@@ -96,14 +96,16 @@ sync_color_scheme = true
     [theme.templates]
     builtin_ids = [ "gtk3", "gtk4", "kcolorscheme", "kitty", "qt", "alacritty", "hyprland" ]
 
-
-[widget.keybinds]
-type = "kenn/keybind-cheatsheet:keybinds"
-glyph = "keyboard"
+[widget.battery]
+hide_when_plugged = true
 
 [widget.clock]
 color = "secondary"
 format = "{:%H:%M %A %m/%d/%y}"
+
+[widget.keybinds]
+type = "kenn/keybind-cheatsheet:keybinds"
+glyph = "keyboard"
 
 [widget.launcher]
 color = "secondary"
