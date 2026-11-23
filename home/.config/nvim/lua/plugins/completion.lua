@@ -1,11 +1,21 @@
 -- ---------------------------------------------------------------------------
--- Completion: blink.cmp (pinned v1.10.2) + LuaSnip + friendly-snippets
--- (ported from LazyVim's blink + luasnip extras).
+-- Completion: blink.cmp v2 (main; needs saghen/blink.lib) + LuaSnip +
+-- friendly-snippets (ported from LazyVim's blink + luasnip extras).
 -- Deferred to the first InsertEnter/CmdlineEnter.
+-- The Rust fuzzy library is built once with `require('blink.cmp').build():pwait()`
+-- (vim.pack has no build hook); see :checkhealth blink.
+-- org.nvim's blink source ("Org") is enabled for org buffers only.
 -- ---------------------------------------------------------------------------
 
 local function setup_completion()
   if package.loaded["rewrite_completion"] then
+    return
+  end
+
+  -- blink.cmp v2 depends on blink.lib: it must be on the rtp before blink.cmp
+  local ok_lib, lib_err = pcall(require, "blink.lib")
+  if not ok_lib then
+    vim.notify("blink.cmp v2 needs saghen/blink.lib: " .. tostring(lib_err), vim.log.levels.ERROR)
     return
   end
 
@@ -53,6 +63,13 @@ local function setup_completion()
     },
     sources = {
       default = { "lsp", "path", "snippets", "buffer" },
+      -- org.nvim's blink source (module org.completion.blink, enabled for org only)
+      per_filetype = {
+        org = { inherit_defaults = true, "org" },
+      },
+      providers = {
+        org = { name = "Org", module = "org.completion.blink" },
+      },
     },
     cmdline = {
       enabled = true,
