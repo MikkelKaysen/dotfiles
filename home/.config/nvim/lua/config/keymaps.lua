@@ -314,24 +314,26 @@ map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit All" })
 map("n", "<leader>qr", function()
   local unsafe = {}
 
+  local org_buffers = require("util.org_buffers")
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_option(buf, "modified") then
+    if vim.api.nvim_buf_is_valid(buf) then
       local name = vim.api.nvim_buf_get_name(buf)
-      local buftype = vim.api.nvim_buf_get_option(buf, "buftype")
-      local org_buffers = require("util.org_buffers")
-      local org_capture = org_buffers.is_capture(buf)
-      local org_edit = org_buffers.is_special_edit(buf)
-      local org_note = org_buffers.is_note_ui(buf)
+      local display = name ~= "" and name or "unnamed"
 
-      if name == "" or buftype ~= "" or org_capture or org_edit or org_note then
-        local reason = name == "" and "unnamed"
-          or buftype ~= "" and ("nonempty buftype: " .. buftype)
-          or org_capture and "capture"
-          or org_edit and "source block edit"
-          or org_note and "org note"
-          or "temporary"
-
-        unsafe[#unsafe + 1] = string.format("buf %d (%s): %s", buf, name ~= "" and name or "unnamed", reason)
+      -- open org capture / source-edit buffers are refused even when unmodified
+      if org_buffers.is_capture(buf) then
+        unsafe[#unsafe + 1] = string.format("buf %d (%s): capture", buf, display)
+      elseif org_buffers.is_special_edit(buf) then
+        unsafe[#unsafe + 1] = string.format("buf %d (%s): source block edit", buf, display)
+      elseif vim.api.nvim_buf_get_option(buf, "modified") then
+        local buftype = vim.api.nvim_buf_get_option(buf, "buftype")
+        -- *Org Note* is only refused when modified (this branch)
+        if org_buffers.is_note_ui(buf) then
+          unsafe[#unsafe + 1] = string.format("buf %d (%s): org note", buf, display)
+        elseif name == "" or buftype ~= "" then
+          local reason = name == "" and "unnamed" or ("nonempty buftype: " .. buftype)
+          unsafe[#unsafe + 1] = string.format("buf %d (%s): %s", buf, display, reason)
+        end
       end
     end
   end
