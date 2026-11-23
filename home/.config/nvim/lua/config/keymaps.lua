@@ -318,14 +318,17 @@ map("n", "<leader>qr", function()
     if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_option(buf, "modified") then
       local name = vim.api.nvim_buf_get_name(buf)
       local buftype = vim.api.nvim_buf_get_option(buf, "buftype")
-      local org_capture = vim.b[buf] and vim.b[buf].org_capture
-      local org_edit = vim.b[buf] and vim.b[buf].__org_edit_special_ctx
+      local org_buffers = require("util.org_buffers")
+      local org_capture = org_buffers.is_capture(buf)
+      local org_edit = org_buffers.is_special_edit(buf)
+      local org_note = org_buffers.is_note_ui(buf)
 
-      if name == "" or buftype ~= "" or org_capture or org_edit then
+      if name == "" or buftype ~= "" or org_capture or org_edit or org_note then
         local reason = name == "" and "unnamed"
           or buftype ~= "" and ("nonempty buftype: " .. buftype)
           or org_capture and "capture"
           or org_edit and "source block edit"
+          or org_note and "org note"
           or "temporary"
 
         unsafe[#unsafe + 1] = string.format("buf %d (%s): %s", buf, name ~= "" and name or "unnamed", reason)
