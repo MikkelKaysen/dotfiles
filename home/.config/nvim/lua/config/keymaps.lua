@@ -184,7 +184,7 @@ local function remove_inactive_plugins(names)
   vim.notify(("Removed %d inactive plugin(s): %s"):format(#names, table.concat(names, ", ")), vim.log.levels.INFO)
 end
 
-map("n", "<leader>pc", function()
+map("n", "<leader>Pc", function()
   local names = get_inactive_plugins()
   if #names == 0 then
     vim.notify("No inactive plugins to remove.", vim.log.levels.INFO)
