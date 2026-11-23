@@ -105,7 +105,7 @@ end, { desc = "Update Plugins" })
 map("n", "<leader>PU", function()
   vim.pack.update(nil, { force = true })
 end, { desc = "Update Plugins without review prompt" })
-map("n", "<leader>pM", function()
+map("n", "<leader>PM", function()
   local ok_registry, registry = pcall(require, "mason-registry")
   if not ok_registry or not registry then
     vim.notify("Mason registry is unavailable; unable to update installed tools.", vim.log.levels.ERROR)
