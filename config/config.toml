@@ -75,7 +75,7 @@ zsh = true
 
 [tools]
 usage = "latest"
-bitwarden = "2026.10"
+bitwarden = "latest"
 fnox = "latest"
 age = "latest"
 btop = "latest"
