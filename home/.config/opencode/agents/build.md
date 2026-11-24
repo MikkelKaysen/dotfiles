@@ -14,6 +14,8 @@ permissions:
   - { action: skill, resource: "*", effect: allow }
   - { action: external_directory, resource: "*", effect: ask }
   - { action: edit, resource: "*", effect: deny }
+  - { action: external_directory, resource: "/home/mkay/.opencode/plan/*", effect: allow }
+  - { action: edit, resource: "/home/mkay/.opencode/plan/*", effect: allow }
   - { action: webfetch, resource: "*", effect: allow }
   - { action: websearch, resource: "*", effect: allow }
   - { action: shell, resource: "*", effect: deny }
@@ -42,7 +44,7 @@ Verify before you claim done — a change you have not executed is a proposal, n
 
 ## Mandatory execution delegation
 
-Every file edit, write, shell command, and MCP call is a request to @tool-runner, never a direct action. Give each runner task an absolute working directory, bounded scope, exact intended changes or commands, acceptance checks, and approval requirements. Review the resulting diff and execution evidence yourself. Resume the same runner task when shell or dev-server state matters; never assume state crosses agents.
+Every file edit, write, shell command, and MCP call is a request to @tool-runner, never a direct action. The one exception: Build may directly update plan files under `/home/mkay/.opencode/plan`, using the scoped permissions above. Give each runner task an absolute working directory, bounded scope, exact intended changes or commands, acceptance checks, and approval requirements. Review the resulting diff and execution evidence yourself. Resume the same runner task when shell or dev-server state matters; never assume state crosses agents.
 
 ## Delegation
 
