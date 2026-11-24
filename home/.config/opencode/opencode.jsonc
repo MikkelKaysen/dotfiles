@@ -20,7 +20,9 @@
         "command": [
           "npx",
           "-y",
-          "@modelcontextprotocol/server-filesystem"
+          "@modelcontextprotocol/server-filesystem",
+          "/home/mkay/code/work/bunker/atoz.git/master",
+          "/home/mkay/.opencode/plan"
         ],
       },
       "git": {
