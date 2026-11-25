@@ -62,3 +62,5 @@ fi
 [dotfiles]
 "~/.config/hyprmoncfg" = { mode = "track", exclude = ["display-fallbacks.json"] }
 "~/.config/uwsm" = { mode = "track" }
+"~/.local/share/noctalia/plugins" = { mode = "track" }
+"~/.local/state/noctalia/settings.toml" = { mode = "track" }

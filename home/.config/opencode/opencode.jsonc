@@ -21,8 +21,6 @@
           "npx",
           "-y",
           "@modelcontextprotocol/server-filesystem",
-          "/home/mkay/code/work/bunker/atoz.git/master",
-          "/home/mkay/.opencode/plan"
         ],
       },
       "git": {
@@ -71,7 +69,11 @@
   "agents": {
     "plan": {
       "permissions": [
-        { "action": "subagent", "resource": "commit-message", "effect": "allow" },
+        {
+          "action": "subagent",
+          "resource": "commit-message",
+          "effect": "allow"
+        },
       ],
     },
   },
