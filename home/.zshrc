@@ -26,3 +26,9 @@ btop() {
   zsh -f "${XDG_CONFIG_HOME:-$HOME/.config}/btop/theme-sync.sh" 2>/dev/null || true
   command btop "$@"
 }
+
+
+# Load Angular CLI autocompletion for interactive shells.
+if [[ $- == *i* ]]; then
+  source <(ng completion script)
+fi

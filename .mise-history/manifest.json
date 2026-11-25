@@ -261,6 +261,9 @@
   "permissions": {
     "home/.config": 448,
     "home/.config/opencode/cli.json": 384,
+    "home/.local": 448,
+    "home/.local/share": 448,
+    "home/.local/state": 448,
     "home/.local/state/noctalia": 448
   }
 }
