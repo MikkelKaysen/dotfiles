@@ -1,9 +1,13 @@
 -- ---------------------------------------------------------------------------
--- Orgmode notes: notes.org root + agenda/capture + NotesSync integration.
+-- Org notes (xheisenbugx/org.nvim): notes root + agenda/capture + NotesSync
+-- integration. org.nvim keeps its own defaults (<leader>o prefix, Emacs keys);
+-- the custom note keys live under <leader>N.
 -- ---------------------------------------------------------------------------
 
 local NOTES_ROOT = vim.fs.normalize("/home/mkay/code/personal/notes.org")
 local NOTES_INDEX = NOTES_ROOT .. "/index.org"
+
+local org_buffers = require("util.org_buffers")
 
 local function org_files_picker()
   require("snacks").picker.files({ cwd = NOTES_ROOT, glob = "*.org" })
@@ -28,7 +32,7 @@ local function save_note_buffer(buf)
     vim.cmd.write()
   end)
   if not ok or vim.bo[buf].modified then
-    vim.notify("Orgmode: failed to save note buffer before close", vim.log.levels.ERROR)
+    vim.notify("org.nvim: failed to save note buffer before close", vim.log.levels.ERROR)
     return false
   end
   return true
@@ -48,13 +52,6 @@ local function is_note_buffer(buf)
   return vim.bo[buf].filetype == "org" and under_notes_root(name)
 end
 
-local function is_capture_buffer(buf)
-  if not vim.api.nvim_buf_is_valid(buf) then
-    return false
-  end
-  return vim.b[buf].org_capture == true
-end
-
 local function is_org_ui_window(win)
   if not win or not vim.api.nvim_win_is_valid(win) then
     return false
@@ -65,23 +62,15 @@ local function is_org_ui_window(win)
     return false
   end
 
-  if is_capture_buffer(buf) then
-    return true
-  end
-
-  local ft = vim.bo[buf].filetype
-  if ft == "orgagenda" or ft == "orghelp" then
-    return true
-  end
-  if vim.b[buf].__org_edit_special_ctx then
+  -- org.nvim buffers with a marker: capture, source edit, *Org Note*, agenda
+  if org_buffers.is_org_temp(buf) then
     return true
   end
 
   local name = vim.api.nvim_buf_get_name(buf)
-  if name and vim.fn.fnamemodify(name, ":t") == "orgcalendar" then
-    return true
-  end
-
+  -- org.nvim's help (g?) and calendar windows are unmarked floats; a
+  -- scratch org float with no name and no changes is treated as UI
+  local ft = vim.bo[buf].filetype
   if ft == "org" and not under_notes_root(name) then
     local cfg = vim.api.nvim_win_get_config(win)
     local is_float = cfg.relative ~= "" or cfg.external
@@ -103,19 +92,15 @@ local function is_usable_non_note_buffer(buf, win)
   if is_note_buffer(buf) then
     return false
   end
-  if is_capture_buffer(buf) then
+  if org_buffers.is_org_temp(buf) then
     return false
   end
   if win and is_org_ui_window(win) then
     return false
   end
 
-  local ft = vim.bo[buf].filetype
-  if ft == "orgagenda" or ft == "orghelp" or vim.b[buf].__org_edit_special_ctx then
-    return false
-  end
-
   local name = vim.api.nvim_buf_get_name(buf)
+  local ft = vim.bo[buf].filetype
   if ft == "org" and not under_notes_root(name) and (name ~= "" or vim.bo[buf].modified) then
     return true
   end
@@ -134,7 +119,7 @@ local function close_window_if_valid(win, force)
 
   local ok, err = pcall(vim.api.nvim_win_close, win, force or false)
   if not ok then
-    vim.notify("Orgmode: failed to close window: " .. tostring(err), vim.log.levels.WARN)
+    vim.notify("org.nvim: failed to close window: " .. tostring(err), vim.log.levels.WARN)
     return false
   end
   return true
@@ -146,7 +131,7 @@ local function close_org_buffers()
     for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
       if vim.api.nvim_win_is_valid(win) then
         local buf = vim.api.nvim_win_get_buf(win)
-        if is_capture_buffer(buf) then
+        if org_buffers.is_capture(buf) then
           capture_wins[#capture_wins + 1] = win
         end
       end
@@ -164,8 +149,8 @@ local function close_org_buffers()
       for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
         if vim.api.nvim_win_is_valid(win) then
           local buf = vim.api.nvim_win_get_buf(win)
-          if is_capture_buffer(buf) then
-            vim.notify("Orgmode: capture still open; aborting note close", vim.log.levels.INFO)
+          if org_buffers.is_capture(buf) then
+            vim.notify("org.nvim: capture still open; aborting note close", vim.log.levels.INFO)
             return
           end
         end
@@ -195,7 +180,7 @@ local function close_org_buffers()
 
     for _, buf in ipairs(note_bufs) do
       if not save_note_buffer(buf) then
-        vim.notify("Orgmode: save failed; aborting note close", vim.log.levels.ERROR)
+        vim.notify("org.nvim: save failed; aborting note close", vim.log.levels.ERROR)
         return
       end
     end
@@ -239,7 +224,7 @@ local function close_org_buffers()
         end
       end
       if not dashboard_survivor then
-        vim.notify("Orgmode: no normal non-Org window available for dashboard fallback", vim.log.levels.WARN)
+        vim.notify("org.nvim: no normal non-Org window available for dashboard fallback", vim.log.levels.WARN)
         return
       end
     end
@@ -248,7 +233,7 @@ local function close_org_buffers()
       for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
         if vim.api.nvim_win_is_valid(win) then
           local buf = vim.api.nvim_win_get_buf(win)
-          if is_note_buffer(buf) or is_org_ui_window(win) or is_capture_buffer(buf) then
+          if is_note_buffer(buf) or is_org_ui_window(win) or org_buffers.is_capture(buf) then
             if usable_win and win == usable_win then
               -- preserve a usable non-note window
             elseif dashboard_survivor and win == dashboard_survivor then
@@ -293,28 +278,31 @@ local function close_org_buffers()
   end)
 end
 
-require("orgmode").setup({
-  org_agenda_files = { NOTES_ROOT .. "/**/*.org" },
-  org_default_notes_file = NOTES_INDEX,
-  org_todo_keywords = { "TODO", "NEXT", "|", "DONE" },
-  org_capture_templates = {
-    j = {
-      description = "Journal",
-      template = "* %U\n\n%?",
-      target = NOTES_ROOT .. "/journal.org",
-      datetree = true,
-    },
-    t = {
-      description = "Task",
-      template = "* TODO %?\n %u",
-      target = NOTES_INDEX,
+require("org").setup({
+  org_directory = NOTES_ROOT,
+  agenda_files = { NOTES_ROOT .. "/**/*.org" },
+  default_notes_file = NOTES_INDEX,
+  todo_keywords = { "TODO NEXT | DONE" },
+  capture = {
+    templates = {
+      j = {
+        description = "Journal",
+        template = "* %U\n\n%?",
+        target = NOTES_ROOT .. "/journal.org",
+        datetree = true,
+      },
+      t = {
+        description = "Task",
+        template = "* TODO %?\n %u",
+        target = NOTES_INDEX,
+      },
     },
   },
 })
 
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "org",
-  group = vim.api.nvim_create_augroup("orgmode_buffer_opts", { clear = true }),
+  group = vim.api.nvim_create_augroup("org_buffer_opts", { clear = true }),
   callback = function()
     vim.opt_local.conceallevel = 2
     vim.opt_local.wrap = true
@@ -328,15 +316,15 @@ require("util.notes_sync").setup({
   expected_remote = "git@github.com:MikkelKaysen/notes.org.git",
 })
 
-vim.keymap.set("n", "<leader>of", function()
+vim.keymap.set("n", "<leader>Nf", function()
   org_files_picker()
 end, { desc = "Files" })
-vim.keymap.set("n", "<leader>og", function()
+vim.keymap.set("n", "<leader>Ng", function()
   org_grep()
 end, { desc = "Grep" })
-vim.keymap.set("n", "<leader>os", function()
+vim.keymap.set("n", "<leader>Ns", function()
   vim.cmd.NotesSync()
 end, { desc = "NotesSync" })
-vim.keymap.set("n", "<leader>oq", close_org_buffers, { desc = "Close note buffers" })
+vim.keymap.set("n", "<leader>Nq", close_org_buffers, { desc = "Close note buffers" })
 
-require("which-key").add({ { "<leader>o", group = "org" } }, { notify = false })
+require("which-key").add({ { "<leader>N", group = "notes" } }, { notify = false })

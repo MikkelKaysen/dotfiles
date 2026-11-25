@@ -33,7 +33,7 @@ require("plugins.git")
 require("plugins.lsp.mason")
 
 require("plugins.treesitter")
-require("plugins.orgmode")
+require("plugins.org")
 require("plugins.completion")
 
 -- lsp: core → per-language

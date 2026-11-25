@@ -99,13 +99,13 @@ map("n", "gco", "o<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>", { desc = "Add Commen
 map("n", "gcO", "O<esc>Vcx<esc><cmd>normal gcc<cr>fxa<bs>", { desc = "Add Comment Above" })
 
 -- packages (replaces <leader>l Lazy)
-map("n", "<leader>pu", function()
+map("n", "<leader>Pu", function()
   vim.pack.update()
 end, { desc = "Update Plugins" })
-map("n", "<leader>pU", function()
+map("n", "<leader>PU", function()
   vim.pack.update(nil, { force = true })
 end, { desc = "Update Plugins without review prompt" })
-map("n", "<leader>pM", function()
+map("n", "<leader>PM", function()
   local ok_registry, registry = pcall(require, "mason-registry")
   if not ok_registry or not registry then
     vim.notify("Mason registry is unavailable; unable to update installed tools.", vim.log.levels.ERROR)
@@ -184,7 +184,7 @@ local function remove_inactive_plugins(names)
   vim.notify(("Removed %d inactive plugin(s): %s"):format(#names, table.concat(names, ", ")), vim.log.levels.INFO)
 end
 
-map("n", "<leader>pc", function()
+map("n", "<leader>Pc", function()
   local names = get_inactive_plugins()
   if #names == 0 then
     vim.notify("No inactive plugins to remove.", vim.log.levels.INFO)
@@ -202,7 +202,7 @@ map("n", "<leader>pc", function()
   end)
 end, { desc = "Clean up inactive plugins" })
 
-map("n", "<leader>pC", function()
+map("n", "<leader>PC", function()
   remove_inactive_plugins(get_inactive_plugins())
 end, { desc = "Remove inactive plugins" })
 
@@ -314,21 +314,26 @@ map("n", "<leader>qq", "<cmd>qa<cr>", { desc = "Quit All" })
 map("n", "<leader>qr", function()
   local unsafe = {}
 
+  local org_buffers = require("util.org_buffers")
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_valid(buf) and vim.api.nvim_buf_get_option(buf, "modified") then
+    if vim.api.nvim_buf_is_valid(buf) then
       local name = vim.api.nvim_buf_get_name(buf)
-      local buftype = vim.api.nvim_buf_get_option(buf, "buftype")
-      local org_capture = vim.b[buf] and vim.b[buf].org_capture
-      local org_edit = vim.b[buf] and vim.b[buf].__org_edit_special_ctx
+      local display = name ~= "" and name or "unnamed"
 
-      if name == "" or buftype ~= "" or org_capture or org_edit then
-        local reason = name == "" and "unnamed"
-          or buftype ~= "" and ("nonempty buftype: " .. buftype)
-          or org_capture and "capture"
-          or org_edit and "source block edit"
-          or "temporary"
-
-        unsafe[#unsafe + 1] = string.format("buf %d (%s): %s", buf, name ~= "" and name or "unnamed", reason)
+      -- open org capture / source-edit buffers are refused even when unmodified
+      if org_buffers.is_capture(buf) then
+        unsafe[#unsafe + 1] = string.format("buf %d (%s): capture", buf, display)
+      elseif org_buffers.is_special_edit(buf) then
+        unsafe[#unsafe + 1] = string.format("buf %d (%s): source block edit", buf, display)
+      elseif vim.api.nvim_buf_get_option(buf, "modified") then
+        local buftype = vim.api.nvim_buf_get_option(buf, "buftype")
+        -- *Org Note* is only refused when modified (this branch)
+        if org_buffers.is_note_ui(buf) then
+          unsafe[#unsafe + 1] = string.format("buf %d (%s): org note", buf, display)
+        elseif name == "" or buftype ~= "" then
+          local reason = name == "" and "unnamed" or ("nonempty buftype: " .. buftype)
+          unsafe[#unsafe + 1] = string.format("buf %d (%s): %s", buf, display, reason)
+        end
       end
     end
   end
