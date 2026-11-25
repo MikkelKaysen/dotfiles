@@ -233,6 +233,18 @@
       "variants": []
     },
     {
+      "path": "home/.local/share/noctalia/plugins",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
+      "path": "home/.local/state/noctalia/settings.toml",
+      "autosave": true,
+      "encrypt": false,
+      "variants": []
+    },
+    {
       "path": "home/.zshrc",
       "autosave": true,
       "encrypt": false,
@@ -248,6 +260,7 @@
   ],
   "permissions": {
     "home/.config": 448,
-    "home/.config/opencode/cli.json": 384
+    "home/.config/opencode/cli.json": 384,
+    "home/.local/state/noctalia": 448
   }
 }
