@@ -49,13 +49,27 @@ require("trouble").setup({
       win = { type = "split", position = "right", size = 40 },
       focus = false,
     },
+    symbols_lsp = {
+      sections = {
+        "symbols",
+        "lsp_definitions",
+        "lsp_references",
+        "lsp_implementations",
+        "lsp_type_definitions",
+        "lsp_declarations",
+        "lsp_incoming_calls",
+        "lsp_outgoing_calls",
+      },
+      win = { type = "split", position = "right", size = 40 },
+      focus = false,
+    },
   },
 })
 
 Snacks.keymap.set("n", "<leader>xx", function() require("trouble").toggle({ mode = "diagnostics" }) end, { desc = "Diagnostics (Trouble)" })
 Snacks.keymap.set("n", "<leader>xX", function() require("trouble").toggle({ mode = "diagnostics", filter = { buf = 0 } }) end, { desc = "Buffer Diagnostics (Trouble)" })
-Snacks.keymap.set("n", "<leader>cs", function() require("trouble").toggle({ mode = "symbols" }) end, { desc = "Symbols (Trouble)" })
-Snacks.keymap.set("n", "<leader>cS", function() require("trouble").toggle({ mode = "lsp" }) end, { desc = "LSP references/definitions/... (Trouble)" })
+Snacks.keymap.set("n", "<leader>cs", function() require("trouble").open({ mode = "symbols_lsp" }) end, { desc = "Symbols (Trouble)" })
+Snacks.keymap.set("n", "<leader>cS", function() require("trouble").open({ mode = "symbols_lsp" }) end, { desc = "LSP references/definitions/... (Trouble)" })
 Snacks.keymap.set("n", "<leader>xL", function() require("trouble").toggle({ mode = "loclist" }) end, { desc = "Location List (Trouble)" })
 Snacks.keymap.set("n", "<leader>xQ", function() require("trouble").toggle({ mode = "qflist" }) end, { desc = "Quickfix List (Trouble)" })
 Snacks.keymap.set("n", "[q", function()
