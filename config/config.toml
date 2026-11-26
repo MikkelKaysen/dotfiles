@@ -105,7 +105,7 @@ cargo-binstall = "latest"
 eza = "latest"
 uv = "latest"
 codegraph = "latest"
-playwright = "1.64.1"
+playwright = "1.65.1"
 "npm:tokscale" = "latest"
 
 [settings]
