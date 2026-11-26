@@ -125,24 +125,6 @@ local function toggle_lsp()
   end
 end
 
-require("trouble").setup({
-  modes = {
-    lsp_base = {
-      win = { type = "split", position = "right", size = 40 },
-      focus = false,
-      filter = dedupe_lsp_locations,
-    },
-    lsp = {
-      win = { type = "split", position = "right", size = 40 },
-      focus = false,
-    },
-    symbols = {
-      win = { type = "split", position = "right", size = 40 },
-      focus = false,
-    },
-  },
-})
-
 Snacks.keymap.set("n", "<leader>xx", function() require("trouble").toggle({ mode = "diagnostics" }) end, { desc = "Diagnostics (Trouble)" })
 Snacks.keymap.set("n", "<leader>xX", function() require("trouble").toggle({ mode = "diagnostics", filter = { buf = 0 } }) end, { desc = "Buffer Diagnostics (Trouble)" })
 Snacks.keymap.set("n", "<leader>cs", toggle_symbols, { desc = "Symbols (Trouble)" })
