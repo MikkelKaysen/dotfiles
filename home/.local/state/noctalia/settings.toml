@@ -144,11 +144,11 @@ widget_order = [
     [lockscreen_widgets.widget."lockscreen-login-box@DP-8"]
     box_height = 196.0
     box_width = 810.0
-    cx = 960.0
-    cy = 898.0
+    cx = 2048.0
+    cy = 1796.0
     output = "DP-8"
-    placement_height = 1080.0
-    placement_width = 1920.0
+    placement_height = 2160.0
+    placement_width = 4096.0
     rotation = 0.0
     type = "login_box"
 
