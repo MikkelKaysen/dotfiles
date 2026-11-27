@@ -261,6 +261,8 @@
   "permissions": {
     "home/.config": 448,
     "home/.config/opencode/cli.json": 384,
+    "home/.config/zsh/personal/init.zsh.zwc": 292,
+    "home/.config/zsh/personal/nvim.functions.zsh.zwc": 292,
     "home/.local": 448,
     "home/.local/share": 448,
     "home/.local/state": 448,

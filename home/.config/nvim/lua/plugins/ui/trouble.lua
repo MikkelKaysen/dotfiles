@@ -37,47 +37,98 @@ end
 require("trouble").setup({
   modes = {
     lsp_base = {
-      win = { position = "right", size = 40 },
+      win = { type = "split", position = "right", size = 40 },
       focus = false,
       filter = dedupe_lsp_locations,
     },
     lsp = {
-      win = { position = "right", size = 40 },
+      win = { type = "split", position = "right", size = 40 },
       focus = false,
     },
     symbols = {
-      win = { position = "right", size = 40 },
+      win = { type = "split", position = "right", size = 40 },
       focus = false,
     },
   },
 })
 
-local function toggle_trouble_mode(mode)
-  local trouble = require("trouble")
-  local other_mode = mode == "symbols" and "lsp" or "symbols"
-  local mode_open = trouble.is_open({ mode = mode })
-  local other_open = trouble.is_open({ mode = other_mode })
+-- Sidebar helpers: `symbols` and `lsp` are independent views stacked in one
+-- right-hand column (symbols on top, lsp below). Each toggles on its own.
+local SIDEBAR_WIDTH = 40
+local LSP_HEIGHT = 0.46
 
-  if mode_open and not other_open then
-    trouble.close({ mode = mode })
+-- Returns the open view for `mode`, if any.
+local function find_open_view(mode)
+  local entries = require("trouble.view").get({ mode = mode, open = true })
+  for i = #entries, 1, -1 do
+    local view = entries[i].view
+    if view and view.is_open and view:is_open() then
+      return view
+    end
+  end
+end
+
+-- Opens `lsp` below the given symbols view (sidebar stack).
+local function open_lsp_below(symbols_view)
+  require("trouble").open({
+    mode = "lsp",
+    open_no_results = true,
+    focus = false,
+    win = { type = "split", relative = "win", win = symbols_view.win.win, position = "bottom", size = LSP_HEIGHT },
+  })
+end
+
+local function toggle_symbols()
+  local symbols_view = find_open_view("symbols")
+  if symbols_view then
+    symbols_view:close()
     return
   end
 
-  if other_open then
-    trouble.close({ mode = other_mode })
+  -- If lsp is already open, stack symbols above it; otherwise use the right sidebar.
+  local lsp_view = find_open_view("lsp")
+  local win
+  if lsp_view then
+    win = { type = "split", relative = "win", win = lsp_view.win.win, position = "top", size = 0.5 }
+  else
+    win = { type = "split", relative = "editor", position = "right", size = SIDEBAR_WIDTH }
   end
+  require("trouble").open({ mode = "symbols", open_no_results = true, focus = false, win = win })
+end
 
-  if mode_open then
+local function toggle_lsp()
+  local lsp_view = find_open_view("lsp")
+  if lsp_view then
+    lsp_view:close()
     return
   end
 
-  trouble.open({ mode = mode })
+  -- lsp needs symbols as its anchor; open symbols first if it is not open.
+  local symbols_view = find_open_view("symbols")
+  if symbols_view then
+    open_lsp_below(symbols_view)
+    return
+  end
+
+  local anchor = require("trouble").open({
+    mode = "symbols",
+    open_no_results = true,
+    focus = false,
+    win = { type = "split", relative = "editor", position = "right", size = SIDEBAR_WIDTH },
+  })
+  if anchor then
+    anchor:wait(function()
+      if anchor:is_open() and not find_open_view("lsp") then
+        open_lsp_below(anchor)
+      end
+    end)
+  end
 end
 
 Snacks.keymap.set("n", "<leader>xx", function() require("trouble").toggle({ mode = "diagnostics" }) end, { desc = "Diagnostics (Trouble)" })
 Snacks.keymap.set("n", "<leader>xX", function() require("trouble").toggle({ mode = "diagnostics", filter = { buf = 0 } }) end, { desc = "Buffer Diagnostics (Trouble)" })
-Snacks.keymap.set("n", "<leader>cs", function() toggle_trouble_mode("symbols") end, { desc = "Symbols (Trouble)" })
-Snacks.keymap.set("n", "<leader>cS", function() toggle_trouble_mode("lsp") end, { desc = "LSP references/definitions/... (Trouble)" })
+Snacks.keymap.set("n", "<leader>cs", toggle_symbols, { desc = "Symbols (Trouble)" })
+Snacks.keymap.set("n", "<leader>cS", toggle_lsp, { desc = "LSP references/definitions/... (Trouble)" })
 Snacks.keymap.set("n", "<leader>xL", function() require("trouble").toggle({ mode = "loclist" }) end, { desc = "Location List (Trouble)" })
 Snacks.keymap.set("n", "<leader>xQ", function() require("trouble").toggle({ mode = "qflist" }) end, { desc = "Quickfix List (Trouble)" })
 Snacks.keymap.set("n", "[q", function()
